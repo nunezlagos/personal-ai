@@ -27,26 +27,22 @@
 
 Tenés acceso al servidor MCP `persistence`.
 
-### Cuándo GUARDAR — llamá `mem_save` inmediatamente después de:
-1. Bug fix — causa raíz + solución
-2. Decisión de arquitectura — qué y por qué
-3. Convención establecida — naming, estructura, estándares
-4. Preferencia del usuario
-5. Descubrimiento no obvio — gotchas, edge cases
-6. Configuración del entorno
+### Arranque (ahorra tokens — ejecutar en orden):
+1. `mem_session_start` → iniciar sesión
+2. `mem_context` → recuperar estado previo
+3. `mem_search("decisiones vigentes")` → saber qué NO hacer
 
-### Cuándo BUSCAR — llamá `mem_search` cuando:
-- El usuario pregunta por algo pasado
-- Antes de empezar trabajo que puede haber sido hecho antes
+**Si la memoria tiene el contexto → NO explorar archivos. Usar memoria directamente.**
 
-### Inicio de sesión
-Llamá `mem_context` al inicio para ver qué se trabajó antes.
+### Guardar con `mem_save` inmediatamente después de:
+- Bug fix (type: bugfix) | Decisión arquitectura (type: decision)
+- Convención (type: config) | Preferencia usuario (type: preference) | Gotcha (type: learning)
 
-### Resumen de sesión (OBLIGATORIO)
-Antes de cerrar, llamá `mem_session_summary`:
-```
-## Goal / ## Accomplished / ## Discoveries / ## Next Steps / ## Relevant Files
-```
+### Reglas de memoria:
+- 1 memoria consolidada > varias pequeñas del mismo tema
+- Usar `topic_key` estable para no crear duplicados
+
+### Fin de sesión (OBLIGATORIO): `mem_session_summary`
 
 ## Flujo SDD
 

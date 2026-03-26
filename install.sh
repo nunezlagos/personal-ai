@@ -193,21 +193,30 @@ step "Configuración"
 
 mkdir -p "$HOME/.config/opencode"
 mkdir -p "$HOME/.config/opencode/skills"
-mkdir -p "$HOME/.claude/skills"
+mkdir -p "$HOME/.config/Claude/skills"
+mkdir -p "$HOME/.claude"
 
 echo -e "  ${D}Archivos de configuración${NC}"
+
+# OpenCode config
 for file in AGENTS.md opencode.json .gitignore; do
     if [ -f "$REPO_DIR/config/$file" ]; then
         rm -f "$HOME/.config/opencode/$file"
         ln -s "$REPO_DIR/config/$file" "$HOME/.config/opencode/$file" && \
-        ok "$file" || fail "$file"
+        ok "$file  ${D}→ opencode${NC}" || fail "$file (opencode)"
     fi
 done
 
+# AGENTS.md → Claude Code (lee desde ~/.claude/AGENTS.md)
+if [ -f "$REPO_DIR/config/AGENTS.md" ]; then
+    rm -f "$HOME/.claude/AGENTS.md"
+    ln -s "$REPO_DIR/config/AGENTS.md" "$HOME/.claude/AGENTS.md" && ok "AGENTS.md  ${D}→ claude${NC}" || true
+fi
+
+# CLAUDE.md → Claude Code
 if [ -f "$REPO_DIR/config/CLAUDE.md" ]; then
-    mkdir -p "$HOME/.claude"
     rm -f "$HOME/.claude/CLAUDE.md"
-    ln -s "$REPO_DIR/config/CLAUDE.md" "$HOME/.claude/CLAUDE.md" && ok "CLAUDE.md" || true
+    ln -s "$REPO_DIR/config/CLAUDE.md" "$HOME/.claude/CLAUDE.md" && ok "CLAUDE.md  ${D}→ claude${NC}" || true
 fi
 
 # ── Model routing: models.yaml → opencode.json ──────────────
@@ -279,16 +288,18 @@ for skill in "$REPO_DIR/skills"/*; do
     if [ -d "$skill" ]; then
         name=$(basename "$skill")
 
+        # OpenCode
         rm -rf "$HOME/.config/opencode/skills/$name"
         ln -s "$skill" "$HOME/.config/opencode/skills/$name" 2>/dev/null && : || fail "$name (opencode)"
 
-        rm -rf "$HOME/.claude/skills/$name"
-        ln -s "$skill" "$HOME/.claude/skills/$name" 2>/dev/null && : || fail "$name (claude)"
+        # Claude Code — dos paths posibles
+        rm -rf "$HOME/.config/Claude/skills/$name"
+        ln -s "$skill" "$HOME/.config/Claude/skills/$name" 2>/dev/null && : || fail "$name (claude ~/.config/Claude)"
 
         skill_count=$((skill_count + 1))
     fi
 done
-ok "$skill_count skills vinculados"
+ok "$skill_count skills vinculados  ${D}(opencode + claude)${NC}"
 
 # ─────────────────────────────────────────────────
 # [6/6] Personal Persistence MCP

@@ -17,12 +17,49 @@
 
 ---
 
-## Plugins (instalados)
+## Protocolo de Arranque (OBLIGATORIO — ahorra tokens)
 
-- **opencode-anthropic-login-via-cli**: Login automático con credenciales de Claude Code
-- **opencode-wakatime**: Tracking de tiempo
-- **opencode-codetime**: Métricas de código
-- **opencode-agent-skills**: Skills para agentes
+Al iniciar sesión ejecutar EN ESTE ORDEN:
+
+```
+1. mem_session_start  → registrar inicio de sesión
+2. mem_context        → recuperar estado previo (proyectos, decisiones, preferencias)
+3. mem_search("decisiones vigentes") → saber qué NO hacer
+```
+
+Con esto evito re-explorar el codebase si ya tengo el contexto en memoria.
+**Si la memoria tiene el contexto → NO leer archivos. Usarla directamente.**
+
+---
+
+## Memoria Persistente
+
+**Sistema**: MCP `persistence` (personal-persistence-ai-memory)
+
+### Memorias clave (topic_keys estables)
+| topic_key | Contenido |
+|-----------|-----------|
+| `project/estado-general` | Stack, paths, archivos clave, setup |
+| `project/decisiones-vigentes` | Qué NO hacer, restricciones activas |
+| `user/preferencias` | Idioma, tono, estilo de trabajo |
+
+### Cuándo GUARDAR — `mem_save` inmediatamente después de:
+1. Bug fix → causa raíz + solución (type: bugfix)
+2. Decisión de arquitectura → qué y por qué (type: decision)
+3. Convención nueva → naming, estructura, estándares (type: config)
+4. Preferencia del usuario (type: preference)
+5. Gotcha / edge case no obvio (type: learning)
+
+### Reglas de memoria
+- 1 memoria consolidada > varias memorias pequeñas del mismo tema
+- NO guardar memorias de test/prueba
+- Usar `topic_key` estable para actualizar temas evolutivos (no crear duplicados)
+
+### Fin de sesión (OBLIGATORIO)
+Llamar `mem_session_summary` antes de cerrar con:
+```
+## Goal / ## Accomplished / ## Discoveries / ## Next Steps
+```
 
 ---
 
@@ -39,32 +76,10 @@
 
 ## Sub-Agentes SDD
 
-Los sub-agentes se usan para fases específicas:
-- sdd-init, sdd-explore, sdd-propose
-- sdd-spec, sdd-design, sdd-tasks
-- sdd-apply, sdd-verify, sdd-archive
+Fases: `sdd-init` → `sdd-explore` → `sdd-propose` → `sdd-spec` → `sdd-design` → `sdd-tasks` → `sdd-apply` → `sdd-verify` → `sdd-archive`
 
-Cada uno tiene su propia skill en ~/.config/opencode/skills/
-
----
-
-## Memoria Persistente
-
-**Sistema**: MCP `persistence` (personal-persistence-ai-memory, dentro del repo)
-
-**OBLIGATORIO** guardar después de:
-- Decisiones de arquitectura
-- Bugs resueltos (con causa raíz)
-- Convenciones establecidas
-- Preferencias del usuario
-- Patrones descubiertos
-
-**Protocolo**:
-1. Inicio de sesión → `mem_context` (recuperar estado previo)
-2. Decisión → `mem_save`
-3. Bug fix → `mem_save` (type: bugfix)
-4. Convención nueva → `mem_save`
-5. Fin de sesión → `mem_session_summary`
+Skills en: `~/.config/Claude/skills/`
+Modelos por fase: `config/models.yaml`
 
 ---
 
