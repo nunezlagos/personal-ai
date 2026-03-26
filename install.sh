@@ -85,45 +85,63 @@ echo ""
 echo "Engram (memoria persistente):"
 mkdir -p "$HOME/go/bin"
 
-ENGRAM_VERSION=$(curl -s https://api.github.com/repos/gentleman-programming/engram/releases/latest 2>/dev/null | grep '"tag_name"' | cut -d'"' -f4 || echo "unknown")
+# Obtener versión latest de GitHub
+LATEST_TAG=$(curl -sL "https://api.github.com/repos/gentleman-programming/engram/releases/latest" 2>/dev/null | grep '"tag_name"' | cut -d'"' -f4)
+LATEST_VERSION=$(echo "$LATEST_TAG" | sed 's/^v//')
 
-install_engram() {
-    ARCH=$(uname -m)
-    if [ "$ARCH" = "x86_64" ]; then
-        ENGRAM_TAR="engram_${ENGRAM_VERSION}_linux_amd64.tar.gz"
-    elif [ "$ARCH" = "aarch64" ]; then
-        ENGRAM_TAR="engram_${ENGRAM_VERSION}_linux_arm64.tar.gz"
-    else
-        echo -e "  ${RED}✗${NC} Arquitectura no soportada: $ARCH"
-        return 1
-    fi
-    
-    ENGRAM_URL="https://github.com/gentleman-programming/engram/releases/download/$ENGRAM_VERSION/$ENGRAM_TAR"
-    
-    TEMP_DIR=$(mktemp -d)
-    curl -fsSL "$ENGRAM_URL" -o "$TEMP_DIR/engram.tar.gz" && \
-    tar -xzf "$TEMP_DIR/engram.tar.gz" -C "$TEMP_DIR" && \
-    mv "$TEMP_DIR/engram" "$HOME/go/bin/engram" && \
-    chmod +x "$HOME/go/bin/engram" && \
-    rm -rf "$TEMP_DIR" && \
-    return 0
-}
-
-if [ -f "$HOME/go/bin/engram" ]; then
-    CURRENT_VERSION=$($HOME/go/bin/engram --version 2>/dev/null || echo "unknown")
-    echo -e "  ${GREEN}✓${NC} Engram: ~/go/bin/engram ($CURRENT_VERSION)"
-    echo -e "  ${YELLOW}↻${NC} Actualizando Engram a última versión..."
-    if install_engram; then
-        echo -e "  ${GREEN}✓${NC} Engram actualizado a $ENGRAM_VERSION" 
-    else
-        echo -e "  ${RED}✗${NC} Error al actualizar Engram"
+if [ -z "$LATEST_VERSION" ] || [ "$LATEST_VERSION" = "null" ]; then
+    echo -e "  ${YELLOW}⚠${NC} No se pudo obtener versión latest, saltando actualización de Engram"
+    if [ -f "$HOME/go/bin/engram" ]; then
+        CURRENT_VERSION=$($HOME/go/bin/engram --version 2>/dev/null || echo "unknown")
+        echo -e "  ${GREEN}✓${NC} Engram: ~/go/bin/engram ($CURRENT_VERSION)"
     fi
 else
-    echo -e "${YELLOW}📦 Instalando Engram...${NC}"
-    if install_engram; then
-        echo -e "  ${GREEN}✓${NC} Engram instalado ($ENGRAM_VERSION)" 
+    install_engram() {
+        ARCH=$(uname -m)
+        if [ "$ARCH" = "x86_64" ]; then
+            ENGRAM_TAR="engram_${LATEST_VERSION}_linux_amd64.tar.gz"
+        elif [ "$ARCH" = "aarch64" ]; then
+            ENGRAM_TAR="engram_${LATEST_VERSION}_linux_arm64.tar.gz"
+        else
+            echo -e "  ${RED}✗${NC} Arquitectura no soportada: $ARCH"
+            return 1
+        fi
+        
+        ENGRAM_URL="https://github.com/gentleman-programming/engram/releases/download/$LATEST_TAG/$ENGRAM_TAR"
+        
+        TEMP_DIR=$(mktemp -d)
+        curl -fsSL "$ENGRAM_URL" -o "$TEMP_DIR/engram.tar.gz" && \
+        tar -xzf "$TEMP_DIR/engram.tar.gz" -C "$TEMP_DIR" && \
+        mv "$TEMP_DIR/engram" "$HOME/go/bin/engram" && \
+        chmod +x "$HOME/go/bin/engram" && \
+        rm -rf "$TEMP_DIR" && \
+        return 0
+    }
+
+    if [ -f "$HOME/go/bin/engram" ]; then
+        CURRENT_VERSION=$($HOME/go/bin/engram --version 2>/dev/null || echo "unknown")
+        echo -e "  ${GREEN}✓${NC} Engram: ~/go/bin/engram ($CURRENT_VERSION)"
+        
+        # Comparar versiones (quitando "engram " y "v")
+        CURRENT_VER_NUM=$(echo "$CURRENT_VERSION" | sed 's/^engram //' | sed 's/^v//')
+        
+        if [ "$CURRENT_VER_NUM" = "$LATEST_VERSION" ]; then
+            echo -e "  ${GREEN}✓${NC} Engram ya está en la última versión ($LATEST_VERSION)"
+        else
+            echo -e "  ${YELLOW}↻${NC} Actualizando Engram a $LATEST_VERSION..."
+            if install_engram; then
+                echo -e "  ${GREEN}✓${NC} Engram actualizado a $LATEST_VERSION" 
+            else
+                echo -e "  ${RED}✗${NC} Error al actualizar Engram"
+            fi
+        fi
     else
-        echo -e "  ${RED}✗${NC} Error al instalar Engram"
+        echo -e "${YELLOW}📦 Instalando Engram...${NC}"
+        if install_engram; then
+            echo -e "  ${GREEN}✓${NC} Engram instalado ($LATEST_VERSION)" 
+        else
+            echo -e "  ${RED}✗${NC} Error al instalar Engram"
+        fi
     fi
 fi
 
