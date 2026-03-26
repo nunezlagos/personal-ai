@@ -338,3 +338,9 @@ echo "  3. Claude Code: claude"
 echo "  4. Usá el agente 'oraculo' para comenzar"
 echo "  5. /sdd-init para inicializar un proyecto"
 echo ""
+
+# Auto-actualizar PATH en shell actual
+if [ -f "$HOME/.zshrc" ]; then
+    source "$HOME/.zshrc"
+    echo -e "${GREEN}✅ Shell actualizado${NC}"
+fi
