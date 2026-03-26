@@ -12,7 +12,8 @@
 |--------|-------------|---------------|
 | `oraculo` | Orchestrator principal | Coordinación general |
 | `sentinela` | Seguridad y auditoría | Revisión de cambios |
-| `forjador` | Implementación de código | coding, fixes |
+| `fixer` | Bugs y errores | Debugging, resolución de errores |
+| `forjador` | Implementación de código | coding, features |
 | `revisor` | QA y validación | Verificación, testing |
 | `guardián bd` | Bases de datos | SQL, esquemas, migraciones |
 

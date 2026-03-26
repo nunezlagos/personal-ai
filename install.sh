@@ -281,6 +281,62 @@ else
 fi
 
 echo ""
+echo -e "${YELLOW}⚡ Instalando plugins de OpenCode...${NC}"
+
+# Agregar package.json para dependencias de plugins
+mkdir -p "$HOME/.config/opencode"
+if [ ! -f "$HOME/.config/opencode/package.json" ]; then
+    echo '{
+  "name": "opencode-plugins",
+  "private": true,
+  "dependencies": {
+    "opencode-codetime": "^0.8.1",
+    "opencode-agent-skills": "^0.6.5",
+    "opencode-wakatime": "^1.0.0"
+  }
+}' > "$HOME/.config/opencode/package.json"
+    echo "  ${GREEN}✓${NC} package.json creado con dependencias"
+fi
+
+# Agregar plugins al config si no existen
+if [ -f "$HOME/.config/opencode/opencode.json" ]; then
+    # Verificar si ya tiene plugins
+    if ! grep -q "plugin" "$HOME/.config/opencode/opencode.json"; then
+        echo '  "plugin": []' >> "$HOME/.config/opencode/opencode.json"
+    fi
+    
+    # Agregar plugins si no están
+    for plugin in "opencode-codetime" "opencode-agent-skills" "opencode-wakatime"; do
+        if ! grep -q "\"$plugin\"" "$HOME/.config/opencode/opencode.json"; then
+            sed -i "s/\"plugin\": \[/\"plugin\": [\"$plugin\", /" "$HOME/.config/opencode/opencode.json" 2>/dev/null || true
+        fi
+    done
+    echo "  ${GREEN}✓${NC} Plugins agregados a opencode.json"
+else
+    # Crear config con plugins
+    cat > "$HOME/.config/opencode/opencode.json" << 'EOF'
+{
+  "$schema": "https://opencode.ai/config.json",
+  "plugin": [
+    "opencode-codetime",
+    "opencode-agent-skills",
+    "opencode-wakatime"
+  ]
+}
+EOF
+    echo "  ${GREEN}✓${NC} opencode.json creado con plugins"
+fi
+
+# Instalar dependencias
+cd "$HOME/.config/opencode" && npm install 2>/dev/null || bun install 2>/dev/null || echo "  ${YELLOW}⚠${NC} Bun no instalado, los plugins se instalarán automáticamente"
+
+echo ""
+echo "Plugins instalados:"
+echo "  - opencode-codetime: Tracking de tiempo de código"
+echo "  - opencode-agent-skills: Skills dinámicas"
+echo "  - opencode-wakatime: Métricas de código (opcional)"
+
+echo ""
 if [ ${#MISSING_DEPS[@]} -gt 0 ]; then
     echo -e "${YELLOW}⚠️  Dependencias faltantes:${NC}"
     for dep in "${MISSING_DEPS[@]}"; do
