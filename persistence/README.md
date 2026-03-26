@@ -4,7 +4,7 @@ Persistent memory layer for AI agents with extended session tracking, docs index
 
 ## Features
 
-- **Memory** - Persistent memory storage with FTS5 full-text search (Engram-compatible)
+- **Memory** - Persistent memory storage with FTS5 full-text search (MCP persistence)
 - **Sessions** - Extended session tracking with commands, files, errors, skills used
 - **Documentation** - Index and search documentation for frameworks (React, PHP, TS, JS, etc.)
 - **Skills** - Auto-detect project skills from package.json, composer.json, pyproject.toml
@@ -81,7 +81,7 @@ export PERSISTENCE_DB_PATH=/custom/path/memory.db
 
 ## Schema
 
-### Engram Core Tables
+### Core Tables
 - `sessions` - Session tracking
 - `memories` - Persistent memories with FTS5
 - `prompts` - User prompts

@@ -43,11 +43,11 @@ function generateId(): string {
 }
 
 // =====================================================
-// MEMORY SERVICE (Engram-compatible)
+// MEMORY SERVICE — personal-persistence-ai-memory
 // =====================================================
 
 /**
- * Save a memory (Engram-compatible with extensions)
+ * Save a memory to persistent storage
  */
 export function saveMemory(input: MemoryInput): Memory {
   const id = generateId();

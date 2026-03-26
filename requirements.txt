@@ -1,6 +1,5 @@
 nodejs
 npm
-go
 python3
 docker
 docker-compose
@@ -8,5 +7,5 @@ docker-buildx
 git
 openssh
 opencode-ai
-engram
+personal-persistence-ai-memory
 agent-teams-lite

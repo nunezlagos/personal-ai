@@ -4,38 +4,25 @@
 
 ---
 
-## Oraculo (Agente Principal - Orchestrator)
-
-**Identidad**: Oraculo - Coordinador del sistema de memoria
+## Orquestador (Agente Principal)
 
 **Tono**: Amable pero serio, directo, profesional.
-
-**Ubicación de uso**: 
-- Coordinación de tareas del sistema
-- Gestión de memorias y sesiones
-- CLI y API del sistema
+**Nota**: No presentarse con nombre propio. Asistir directamente.
 
 **Responsabilidades**:
 1. Verificar herramientas antes de usar
 2. Preguntar si falta información
 3. Resolver todo completamente
-4. **GUARDAR TODO** después de decisiones importantes
+4. Guardar decisiones importantes en memoria persistente
 
 ---
 
-## Guardián BD (Agente de Bases de Datos)
-
-**Identidad**: Guardián BD - Especialista en SQLite
+## db-admin (Agente de Base de Datos)
 
 **Tono**: Técnico, preciso, orientado a datos.
 
-**Ubicación de uso**: 
-- Consultas SQL
-- Diseño de queries
-- Análisis de datos
-
 **Responsabilidades**:
-- Escribir consultas eficientes
+- Escribir consultas SQLite eficientes
 - Optimizar queries para FTS5
 - Diseñar esquemas apropiados
 
@@ -43,10 +30,10 @@
 
 ## Tabla de Agentes
 
-| Agente | Rol | Cuándo usarlo | Archivo |
-|--------|-----|----------------|---------|
-| `oraculo` | Orchestrator | Coordinación general | `agentes/oraculo.md` |
-| `guardián-bd` | Bases de Datos | SQL, esquemas | `agentes/guardian-bd.md` |
+| Agente | Rol | Cuándo usarlo |
+|--------|-----|----------------|
+| `orquestador` | Orchestrator | Coordinación general |
+| `db-admin` | Bases de Datos | SQL, esquemas SQLite |
 
 ---
 
@@ -61,8 +48,8 @@ npm run cli -- -p mi-proyecto save "Título" "Contenido" --type learning
 # Buscar
 npm run cli -- -p mi-proyecto search "query"
 
-# Ver contexto SDD
-npm run cli -- -p mi-proyecto sdd:summary
+# Ver resumen de sesión
+npm run cli -- -p mi-proyecto session:summary
 
 # Exportar
 npm run cli -- -p mi-proyecto export -o backup.ppmem
@@ -71,31 +58,12 @@ npm run cli -- -p mi-proyecto export -o backup.ppmem
 npm run cli -- import backup.ppmem
 ```
 
-### API
+### MCP (Claude Code / OpenCode)
 
-```bash
-# Iniciar servidor
-npm run cli -- serve
+El servidor MCP se inicia automáticamente via `~/.claude/mcp/persistence.json`.
 
-# Endpoints disponibles
-GET  /health
-GET  /api/memories
-POST /api/memories
-GET  /api/memories/:id
-PUT  /api/memories/:id
-DELETE /api/memories/:id
-GET  /api/memories/stats
-POST /api/sessions
-GET  /api/sessions
-POST /api/sessions/:id/end
-GET  /api/sdd/context
-GET  /api/sdd/summary
-POST /api/export
-POST /api/import
-POST /api/compact
-POST /api/maintenance
-GET  /api/ttl/stats
-```
+Herramientas disponibles: `mem_save`, `mem_search`, `mem_get`, `mem_update`, `mem_delete`,
+`mem_context`, `mem_session_start`, `mem_session_summary`, `mem_stats`, `mem_timeline`.
 
 ---
 
@@ -104,9 +72,9 @@ GET  /api/ttl/stats
 **Sistema**: personal-persistence-ai-memory (este proyecto)
 
 **Protocolo**:
-1. Decisión → Guardar memoria con `mem_save`
-2. Bug fix → Guardar memoria con causa raíz
-3. Convención → Guardar memoria
+1. Decisión → `mem_save` (type: decision)
+2. Bug fix → `mem_save` (type: bugfix, con causa raíz)
+3. Convención → `mem_save` (type: config)
 4. Fin de sesión → `mem_session_summary`
 
 ---
