@@ -18,6 +18,31 @@ echo -e "${BLUE}  Agente: Oraculo${NC}"
 echo -e "${BLUE}==========================================${NC}"
 echo ""
 
+# ============================================
+# DETECCIÓN DEL SISTEMA OPERATIVO
+# ============================================
+
+detect_os() {
+    if [ -f /etc/os-release ]; then
+        . /etc/os-release
+        echo "$ID"
+    elif [ -f /etc/arch-release ]; then
+        echo "arch"
+    elif [ -f /etc/debian_version ]; then
+        echo "debian"
+    elif [ -f /etc/fedora-release ]; then
+        echo "fedora"
+    elif [ "$(uname)" = "Darwin" ]; then
+        echo "macos"
+    else
+        echo "unknown"
+    fi
+}
+
+OS=$(detect_os)
+echo -e "Sistema detectado: ${YELLOW}$OS${NC}"
+echo ""
+
 if [ -d "$REPO_DIR" ]; then
     echo -e "${YELLOW}📦 Actualizando repositorio...${NC}"
     cd "$REPO_DIR"
@@ -65,20 +90,81 @@ check_command docker || echo -e "  ${YELLOW}⚠${NC} Docker: no encontrado (opci
 check_command composer || echo -e "  ${YELLOW}⚠${NC} Composer: no encontrado (recomendado para PHP)"
 
 echo ""
-echo "AI Agents:"
+echo -e "${YELLOW}🤖 AI Agents:${NC}"
+echo ""
+
+# ============================================
+# OPENCODE
+# ============================================
+
+echo "OpenCode:"
 if command -v opencode &> /dev/null; then
     echo -e "  ${GREEN}✓${NC} OpenCode: $(opencode --version 2>/dev/null || echo "installed")"
-    echo -e "  ${YELLOW}↻${NC} Reinstalling OpenCode to latest..."
-    npm install -g opencode-ai 2>/dev/null && echo -e "  ${GREEN}✓${NC} OpenCode updated" || echo -e "  ${RED}✗${NC} OpenCode update failed"
+    echo -e "  ${YELLOW}↻${NC} Actualizando OpenCode a última versión..."
+    npm install -g opencode-ai 2>/dev/null && echo -e "  ${GREEN}✓${NC} OpenCode actualizado" || echo -e "  ${RED}✗${NC} OpenCode update failed"
 else
     echo -e "  ${RED}✗${NC} OpenCode: NO INSTALADO"
-    echo "    → npm install -g opencode-ai"
+    echo -e "  ${YELLOW}📦 Instalando OpenCode...${NC}"
+    npm install -g opencode-ai && echo -e "  ${GREEN}✓${NC} OpenCode instalado" || echo -e "  ${RED}✗${NC} Error al instalar OpenCode"
 fi
 
+# ============================================
+# CLAUDE CODE
+# ============================================
+
+echo ""
+echo "Claude Code:"
 if command -v claude &> /dev/null; then
-    echo -e "  ${GREEN}✓${NC} Claude Code: installed"
+    echo -e "  ${GREEN}✓${NC} Claude Code: $(claude --version 2>/dev/null | head -1 || echo "installed")"
 else
-    echo -e "  ${YELLOW}⚠${NC} Claude Code: no encontrado (opcional)"
+    echo -e "  ${YELLOW}⚠${NC} Claude Code: NO INSTALADO"
+    echo -e "  ${YELLOW}📦 Instalando Claude Code...${NC}"
+    
+    # Intentar instalación automática
+    if curl -sSfL 'https://docs.anthropic.com/claude-code/install' 2>/dev/null | sh 2>/dev/null; then
+        echo -e "  ${GREEN}✓${NC} Claude Code instalado"
+    else
+        # Instalación manual
+        echo "  ↳ Intentando instalación manual..."
+        ARCH=$(uname -m)
+        CLAUDE_VERSION=$(curl -s https://api.github.com/repos/anthropics/claude-code/releases/latest 2>/dev/null | grep '"tag_name"' | cut -d'"' -f4 || echo "")
+        
+        if [ -n "$CLAUDE_VERSION" ]; then
+            if [ "$ARCH" = "x86_64" ]; then
+                CLAUDE_TAR="claude-code-${CLAUDE_VERSION}-linux-x64.tar.gz"
+            elif [ "$ARCH" = "aarch64" ]; then
+                CLAUDE_TAR="claude-code-${CLAUDE_VERSION}-linux-arm64.tar.gz"
+            else
+                echo -e "  ${RED}✗${NC} Arquitectura no soportada: $ARCH"
+                CLAUDE_TAR=""
+            fi
+            
+            if [ -n "$CLAUDE_TAR" ]; then
+                TEMP_DIR=$(mktemp -d)
+                CLAUDE_URL="https://github.com/anthropics/claude-code/releases/download/$CLAUDE_VERSION/$CLAUDE_TAR"
+                if curl -fsSL "$CLAUDE_URL" -o "$TEMP_DIR/claude.tar.gz" 2>/dev/null; then
+                    tar -xzf "$TEMP_DIR/claude.tar.gz" -C "$TEMP_DIR"
+                    mkdir -p "$HOME/.local/bin"
+                    mv "$TEMP_DIR/claude" "$HOME/.local/bin/claude" && chmod +x "$HOME/.local/bin/claude"
+                    rm -rf "$TEMP_DIR"
+                    echo -e "  ${GREEN}✓${NC} Claude Code instalado"
+                else
+                    echo -e "  ${RED}✗${NC} Error al descargar Claude Code"
+                    rm -rf "$TEMP_DIR"
+                fi
+            fi
+        else
+            echo -e "  ${YELLOW}↢${NC} Manual: https://docs.anthropic.com/claude-code/install"
+        fi
+    fi
+fi
+
+# Verificar que Claude Code esté en PATH
+if command -v claude &> /dev/null; then
+    :
+elif [ -f "$HOME/.local/bin/claude" ]; then
+    echo -e "  ${YELLOW}⚠️  Agregá ~/.local/bin a tu PATH:${NC}"
+    echo "    echo 'export PATH=\$HOME/.local/bin:\$PATH' >> ~/.zshrc"
 fi
 
 echo ""
@@ -145,10 +231,15 @@ else
     fi
 fi
 
-if [[ ":$PATH:" != *":$HOME/go/bin:"* ]]; then
+if [[ ":$PATH:" != *":$HOME/go/bin:"* ]] || [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
     echo ""
-    echo -e "${YELLOW}⚠️  Agregá ~/go/bin a tu PATH:${NC}"
-    echo "    echo 'export PATH=\$HOME/go/bin:\$PATH' >> ~/.zshrc"
+    echo -e "${YELLOW}⚠️  Agregá los bins a tu PATH:${NC}"
+    if [[ ":$PATH:" != *":$HOME/go/bin:"* ]]; then
+        echo "    echo 'export PATH=\$HOME/go/bin:\$PATH' >> ~/.zshrc"
+    fi
+    if [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
+        echo "    echo 'export PATH=\$HOME/.local/bin:\$PATH' >> ~/.zshrc"
+    fi
 fi
 
 echo ""
@@ -228,7 +319,8 @@ echo -e "${BLUE}==========================================${NC}"
 echo ""
 echo "Próximos pasos:"
 echo "  1. source ~/.zshrc"
-echo "  2. opencode"
-echo "  3. Usá el agente 'oraculo' para comenzar"
-echo "  4. /sdd-init para inicializar un proyecto"
+echo "  2. OpenCode: opencode"
+echo "  3. Claude Code: claude"
+echo "  4. Usá el agente 'oraculo' para comenzar"
+echo "  5. /sdd-init para inicializar un proyecto"
 echo ""
