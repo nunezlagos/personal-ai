@@ -59,7 +59,10 @@ ok "OS  ${D}$OS${NC}"
 
 if [ -d "$REPO_DIR" ]; then
     run "Actualizando repositorio..."
-    cd "$REPO_DIR" && git pull -q && ok "Repositorio  ${D}actualizado${NC}"
+    cd "$REPO_DIR"
+    git fetch -q origin 2>/dev/null
+    git reset --hard origin/master -q 2>/dev/null && ok "Repositorio  ${D}actualizado${NC}" || \
+    (git pull -q && ok "Repositorio  ${D}actualizado${NC}")
 else
     run "Clonando repositorio..."
     git clone -q "$REPO_URL" "$REPO_DIR" && ok "Repositorio  ${D}clonado${NC}"
