@@ -14,7 +14,8 @@ NC='\033[0m'
 echo -e "${BLUE}==========================================${NC}"
 echo -e "${BLUE}  Personal AI Setup${NC}"
 echo -e "${BLUE}  Stack: PHP, TypeScript, JavaScript${NC}"
-echo -e "${BLUE}  Agente: Oraculo${NC}"
+echo -e "${BLUE}  Agentes: Oraculo, Arquitecto, Desarrollador, Revisor, Guardia${NC}"
+echo -e "${BLUE}  Memoria: personal-persistence-ai-memory${NC}"
 echo -e "${BLUE}==========================================${NC}"
 echo ""
 
@@ -70,18 +71,18 @@ check_command() {
 
 MISSING_DEPS=()
 
-echo "Lenguajes y runtimes:"
-check_command node || MISSING_DEPS+=(node)
-check_command npm || MISSING_DEPS+=(npm)
-check_command php || MISSING_DEPS+=(php)
-check_command go || MISSING_DEPS+=(go)
-check_command python3 || MISSING_DEPS+=(python3)
+echo "Lenguajes y runtimes (verificación - ya deben estar en sistema):"
+check_command node || echo -e "  ${YELLOW}⚠${NC} Node.js: recomendado para personal-persistence-ai-memory"
+check_command npm || echo -e "  ${YELLOW}⚠${NC} npm: necesario para Node.js"
+check_command php || echo -e "  ${YELLOW}⚠${NC} PHP: opcional (proyectos PHP)"
+check_command composer || true
+check_command go || true
+check_command python3 || true
 
 echo ""
 echo "Herramientas de desarrollo:"
-check_command git || MISSING_DEPS+=(git)
+check_command git || true
 check_command docker || echo -e "  ${YELLOW}⚠${NC} Docker: no encontrado (opcional)"
-check_command composer || echo -e "  ${YELLOW}⚠${NC} Composer: no encontrado (recomendado para PHP)"
 
 echo ""
 echo -e "${YELLOW}🤖 AI Agents:${NC}"
@@ -162,66 +163,36 @@ elif [ -f "$HOME/.local/bin/claude" ]; then
 fi
 
 echo ""
-echo "Engram (memoria persistente):"
-mkdir -p "$HOME/go/bin"
+echo "personal-persistence-ai-memory (memoria persistente):"
 
-# Obtener versión latest de GitHub
-LATEST_TAG=$(curl -sL "https://api.github.com/repos/gentleman-programming/engram/releases/latest" 2>/dev/null | grep '"tag_name"' | cut -d'"' -f4)
-LATEST_VERSION=$(echo "$LATEST_TAG" | sed 's/^v//')
-
-if [ -z "$LATEST_VERSION" ] || [ "$LATEST_VERSION" = "null" ]; then
-    echo -e "  ${YELLOW}⚠${NC} No se pudo obtener versión latest, saltando actualización de Engram"
-    if [ -f "$HOME/go/bin/engram" ]; then
-        CURRENT_VERSION=$($HOME/go/bin/engram --version 2>/dev/null || echo "unknown")
-        echo -e "  ${GREEN}✓${NC} Engram: ~/go/bin/engram ($CURRENT_VERSION)"
-    fi
+# Verificar si Node.js está instalado
+if ! command -v node &> /dev/null; then
+    echo -e "  ${RED}✗${NC} Node.js no está instalado"
+    echo -e "  ${YELLOW}⚠${NC} Instala Node.js primero: https://nodejs.org/"
 else
-    install_engram() {
-        ARCH=$(uname -m)
-        if [ "$ARCH" = "x86_64" ]; then
-            ENGRAM_TAR="engram_${LATEST_VERSION}_linux_amd64.tar.gz"
-        elif [ "$ARCH" = "aarch64" ]; then
-            ENGRAM_TAR="engram_${LATEST_VERSION}_linux_arm64.tar.gz"
-        else
-            echo -e "  ${RED}✗${NC} Arquitectura no soportada: $ARCH"
-            return 1
-        fi
-        
-        ENGRAM_URL="https://github.com/gentleman-programming/engram/releases/download/$LATEST_TAG/$ENGRAM_TAR"
-        
-        TEMP_DIR=$(mktemp -d)
-        curl -fsSL "$ENGRAM_URL" -o "$TEMP_DIR/engram.tar.gz" && \
-        tar -xzf "$TEMP_DIR/engram.tar.gz" -C "$TEMP_DIR" && \
-        mv "$TEMP_DIR/engram" "$HOME/go/bin/engram" && \
-        chmod +x "$HOME/go/bin/engram" && \
-        rm -rf "$TEMP_DIR" && \
-        return 0
-    }
-
-    if [ -f "$HOME/go/bin/engram" ]; then
-        CURRENT_VERSION=$($HOME/go/bin/engram --version 2>/dev/null || echo "unknown")
-        echo -e "  ${GREEN}✓${NC} Engram: ~/go/bin/engram ($CURRENT_VERSION)"
-        
-        # Comparar versiones (quitando "engram " y "v")
-        CURRENT_VER_NUM=$(echo "$CURRENT_VERSION" | sed 's/^engram //' | sed 's/^v//')
-        
-        if [ "$CURRENT_VER_NUM" = "$LATEST_VERSION" ]; then
-            echo -e "  ${GREEN}✓${NC} Engram ya está en la última versión ($LATEST_VERSION)"
-        else
-            echo -e "  ${YELLOW}↻${NC} Actualizando Engram a $LATEST_VERSION..."
-            if install_engram; then
-                echo -e "  ${GREEN}✓${NC} Engram actualizado a $LATEST_VERSION" 
-            else
-                echo -e "  ${RED}✗${NC} Error al actualizar Engram"
-            fi
-        fi
+    # Verificar si ya está instalado
+    if [ -d "$HOME/personal-persistence-ai-memory" ]; then
+        echo -e "  ${GREEN}✓${NC} personal-persistence-ai-memory: ~/personal-persistence-ai-memory"
+        echo -e "  ${YELLOW}↻${NC} Actualizando..."
+        cd "$HOME/personal-persistence-ai-memory" && git pull
     else
-        echo -e "${YELLOW}📦 Instalando Engram...${NC}"
-        if install_engram; then
-            echo -e "  ${GREEN}✓${NC} Engram instalado ($LATEST_VERSION)" 
-        else
-            echo -e "  ${RED}✗${NC} Error al instalar Engram"
-        fi
+        echo -e "${YELLOW}📦 Instalando personal-persistence-ai-memory...${NC}"
+        git clone --depth 1 https://github.com/nunezlagos/personal-persistence-ai-memory.git "$HOME/personal-persistence-ai-memory" && \
+        cd "$HOME/personal-persistence-ai-memory" && npm install
+    fi
+    
+    if [ -d "$HOME/personal-persistence-ai-memory" ]; then
+        echo -e "  ${GREEN}✓${NC} personal-persistence-ai-memory instalado"
+        
+        # Verificar si la API está corriendo (opcional)
+        echo ""
+        echo "  Para iniciar la API:"
+        echo "    cd ~/personal-persistence-ai-memory"
+        echo "    npm run cli -- serve"
+        echo ""
+        echo "  Para usar desde CLI:"
+        echo "    cd ~/personal-persistence-ai-memory"
+        echo "    npm run cli -- -p <proyecto> <comando>"
     fi
 fi
 
@@ -296,22 +267,17 @@ for skill in "$REPO_DIR/skills"/*; do
 done
 
 echo ""
-echo -e "${YELLOW}🧠 Configurando Engram MCP...${NC}"
+echo -e "${YELLOW}🧠 Configurando personal-persistence-ai-memory MCP...${NC}"
 
 # OpenCode: ya viene configurado en opencode.json (symlinkeado arriba)
-echo -e "  ${GREEN}✓${NC} OpenCode: Engram MCP configurado via opencode.json"
+echo -e "  ${GREEN}✓${NC} OpenCode: MCP configurado via opencode.json"
 
-# Claude Code: agregar via claude mcp add si no está
-if command -v claude &> /dev/null; then
-    if claude mcp list 2>/dev/null | grep -q "engram"; then
-        echo -e "  ${GREEN}✓${NC} Claude Code: Engram MCP ya configurado"
-    else
-        claude mcp add engram -- engram mcp --tools=agent 2>/dev/null && \
-        echo -e "  ${GREEN}✓${NC} Claude Code: Engram MCP configurado" || \
-        echo -e "  ${RED}✗${NC} Claude Code: Error al configurar Engram MCP"
-    fi
+# Claude Code: el sistema de memoria funciona via CLI/API
+if command -v node &> /dev/null; then
+    echo -e "  ${GREEN}✓${NC} Claude Code: personal-persistence-ai-memory accesible via npm run cli"
+    echo "    Usage: cd ~/personal-persistence-ai-memory && npm run cli -- -p <proyecto> <comando>"
 else
-    echo -e "  ${YELLOW}⚠${NC} Claude Code no disponible, saltando Engram MCP"
+    echo -e "  ${YELLOW}⚠${NC} Node.js no disponible"
 fi
 
 echo ""
@@ -342,6 +308,11 @@ echo "  2. OpenCode: opencode"
 echo "  3. Claude Code: claude"
 echo "  4. Usá el agente 'oraculo' para comenzar"
 echo "  5. /sdd-init para inicializar un proyecto"
+echo ""
+echo "Memoria persistente:"
+echo "  - API: cd ~/personal-persistence-ai-memory && npm run cli -- serve"
+echo "  - CLI: cd ~/personal-persistence-ai-memory && npm run cli -- -p <proyecto> <comando>"
+echo "  - Puerto: 7438"
 echo ""
 
 # Auto-actualizar PATH en shell actual
