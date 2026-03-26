@@ -109,6 +109,7 @@
       "description": "SDD - Fase de archivo",
       "hidden": true,
       "mode": "subagent",
+      "model": "opencode/claude-haiku-4-5-20251001",
       "prompt": "Eres un ejecutor SDD para la fase de archive. Lee ~/.config/opencode/skills/sdd-archive/SKILL.md y síguelo exactamente. NO delegues.",
       "tools": {
         "bash": true,
@@ -121,6 +122,7 @@
       "description": "SDD - Fase de diseño",
       "hidden": true,
       "mode": "subagent",
+      "model": "opencode/claude-sonnet-4-6",
       "prompt": "Eres un ejecutor SDD para la fase de design. Lee ~/.config/opencode/skills/sdd-design/SKILL.md y síguelo exactamente. NO delegues.\n\nGuarda decisiones arquitectónicas en memoria.",
       "tools": {
         "bash": true,
@@ -133,6 +135,7 @@
       "description": "SDD - Fase de exploración",
       "hidden": true,
       "mode": "subagent",
+      "model": "opencode/claude-opus-4-5",
       "prompt": "Eres un ejecutor SDD para la fase de explore. Lee ~/.config/opencode/skills/sdd-explore/SKILL.md y síguelo exactamente. NO delegues.\n\nGuarda hallazgos en memoria.",
       "tools": {
         "bash": true,
@@ -145,6 +148,7 @@
       "description": "SDD - Fase de inicialización",
       "hidden": true,
       "mode": "subagent",
+      "model": "opencode/claude-sonnet-4-6",
       "prompt": "Eres un ejecutor SDD para la fase de init. Lee ~/.config/opencode/skills/sdd-init/SKILL.md y síguelo exactamente. NO delegues.\n\nGuarda configuración del proyecto en memoria.",
       "tools": {
         "bash": true,
@@ -157,6 +161,7 @@
       "description": "SDD - Fase de propuesta",
       "hidden": true,
       "mode": "subagent",
+      "model": "opencode/claude-opus-4-5",
       "prompt": "Eres un ejecutor SDD para la fase de propose. Lee ~/.config/opencode/skills/sdd-propose/SKILL.md y síguelo exactamente. NO delegues.",
       "tools": {
         "bash": true,
@@ -169,6 +174,7 @@
       "description": "SDD - Fase de especificación",
       "hidden": true,
       "mode": "subagent",
+      "model": "opencode/claude-sonnet-4-6",
       "prompt": "Eres un ejecutor SDD para la fase de spec. Lee ~/.config/opencode/skills/sdd-spec/SKILL.md y síguelo exactamente. NO delegues.",
       "tools": {
         "bash": true,
@@ -181,6 +187,7 @@
       "description": "SDD - Fase de tareas",
       "hidden": true,
       "mode": "subagent",
+      "model": "opencode/claude-sonnet-4-6",
       "prompt": "Eres un ejecutor SDD para la fase de tasks. Lee ~/.config/opencode/skills/sdd-tasks/SKILL.md y síguelo exactamente. NO delegues.",
       "tools": {
         "bash": true,
@@ -193,6 +200,7 @@
       "description": "SDD - Fase de verificación",
       "hidden": true,
       "mode": "subagent",
+      "model": "opencode/claude-sonnet-4-6",
       "prompt": "Eres un ejecutor SDD para la fase de verify. Lee ~/.config/opencode/skills/sdd-verify/SKILL.md y síguelo exactamente. NO delegues.\n\nGuarda resultados de verificación en memoria.",
       "tools": {
         "bash": true,

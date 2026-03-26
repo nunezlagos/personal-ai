@@ -210,6 +210,68 @@ if [ -f "$REPO_DIR/config/CLAUDE.md" ]; then
     ln -s "$REPO_DIR/config/CLAUDE.md" "$HOME/.claude/CLAUDE.md" && ok "CLAUDE.md" || true
 fi
 
+# ── Model routing: models.yaml → opencode.json ──────────────
+
+echo ""
+echo -e "  ${D}Model routing (models.yaml → opencode.json)${NC}"
+
+MODELS_YAML="$REPO_DIR/config/models.yaml"
+OC_JSON="$REPO_DIR/config/opencode.json"
+
+if [ -f "$MODELS_YAML" ] && [ -f "$OC_JSON" ] && command -v node &>/dev/null; then
+    node -e "
+const fs = require('fs');
+const yaml_raw = fs.readFileSync('$MODELS_YAML', 'utf8');
+const json = JSON.parse(fs.readFileSync('$OC_JSON', 'utf8'));
+
+// Minimal YAML parser for flat/nested key: value
+function parseYaml(text) {
+  const result = {};
+  let section = null;
+  for (const raw of text.split('\n')) {
+    const line = raw.replace(/#.*$/, '').trimEnd();
+    if (!line.trim()) continue;
+    const indent = line.length - line.trimStart().length;
+    const kv = line.trim().match(/^([a-z_-]+):\s*(.*)\$/);
+    if (!kv) continue;
+    const [, key, val] = kv;
+    if (indent === 0) { section = key; result[key] = {}; }
+    else if (section && val.trim()) result[section][key] = val.trim();
+  }
+  return result;
+}
+
+const models = parseYaml(yaml_raw);
+let changed = 0;
+
+// Apply sdd models
+if (models.sdd) {
+  for (const [phase, model] of Object.entries(models.sdd)) {
+    const agentKey = 'sdd-' + phase;
+    if (json.agent && json.agent[agentKey]) {
+      json.agent[agentKey].model = model;
+      changed++;
+    }
+  }
+}
+
+// Apply agent models
+if (models.agents) {
+  for (const [agent, model] of Object.entries(models.agents)) {
+    if (json.agent && json.agent[agent]) {
+      json.agent[agent].model = model;
+      changed++;
+    }
+  }
+}
+
+fs.writeFileSync('$OC_JSON', JSON.stringify(json, null, 2) + '\n');
+console.log(changed + ' modelos actualizados');
+" 2>/dev/null && ok "models.yaml aplicado a opencode.json" || warn "Error al aplicar models.yaml (verificar manualmente)"
+else
+    if [ ! -f "$MODELS_YAML" ]; then warn "models.yaml no encontrado — omitiendo model routing"; fi
+fi
+
 echo ""
 echo -e "  ${D}Skills${NC}"
 skill_count=0

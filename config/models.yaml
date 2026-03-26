@@ -1,0 +1,27 @@
+# Modelo por agente/fase — editá este archivo para cambiar modelos
+# sin tocar opencode.json ni install.sh.
+#
+# Modelos disponibles (OpenCode format):
+#   opencode/claude-opus-4-5
+#   opencode/claude-sonnet-4-6
+#   opencode/claude-haiku-4-5-20251001
+#
+# Después de editar, corré: bash install.sh (o bash scripts/apply-models.sh)
+
+sdd:
+  explore: opencode/claude-opus-4-5        # planificación profunda → opus
+  propose: opencode/claude-opus-4-5        # propuesta de cambio → opus
+  init: opencode/claude-sonnet-4-6         # inicialización → sonnet
+  spec: opencode/claude-sonnet-4-6         # especificaciones → sonnet
+  design: opencode/claude-sonnet-4-6       # diseño técnico → sonnet
+  tasks: opencode/claude-sonnet-4-6        # breakdown de tareas → sonnet
+  apply: opencode/claude-sonnet-4-6        # implementación → sonnet
+  verify: opencode/claude-sonnet-4-6       # verificación → sonnet
+  archive: opencode/claude-haiku-4-5-20251001  # solo mueve texto → haiku
+
+agents:
+  fixer: opencode/claude-sonnet-4-6
+  revisor: opencode/claude-sonnet-4-6
+  forjador: opencode/claude-sonnet-4-6
+  sentinela: opencode/claude-sonnet-4-6
+  db-admin: opencode/claude-sonnet-4-6
