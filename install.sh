@@ -296,6 +296,20 @@ if [ -f "$REPO_DIR/config/CLAUDE.md" ]; then
 fi
 
 echo ""
+echo -e "${YELLOW}🔗 Configurando skills para Claude Code...${NC}"
+mkdir -p "$HOME/.claude/skills"
+
+for skill in "$REPO_DIR/skills"/*; do
+    if [ -d "$skill" ]; then
+        skill_name=$(basename "$skill")
+        rm -rf "$HOME/.claude/skills/$skill_name"
+        ln -s "$skill" "$HOME/.claude/skills/$skill_name" && \
+        echo -e "  ${GREEN}✓${NC} $skill_name" || \
+        echo -e "  ${RED}✗${NC} $skill_name (falló)"
+    fi
+done
+
+echo ""
 if [ ${#MISSING_DEPS[@]} -gt 0 ]; then
     echo -e "${YELLOW}⚠️  Dependencias faltantes:${NC}"
     for dep in "${MISSING_DEPS[@]}"; do
