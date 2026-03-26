@@ -1,95 +1,12 @@
-# Personal AI - Requisitos del Sistema
-# Este archivo documenta las dependencias necesarias para el entorno de desarrollo
-
-# ============================================
-# LENGUAJES Y RUNTIMES
-# ============================================
-
-# Node.js - Entorno de ejecución JavaScript
-node (>=18.0.0)
-
-# npm - Gestor de paquetes de Node.js
-npm (>=8.0.0)
-
-# PHP - Lenguaje de backend
-php (>=8.0)
-
-# Composer - Gestor de dependencias PHP
-composer (>=2.0)
-
-# Go - Lenguaje de sistemas
-go (>=1.20)
-
-# Python - Scripts y herramientas
-python3 (>=3.8)
-
-# ============================================
-# BASES DE DATOS
-# ============================================
-
-# MySQL - Base de datos relacional
-mysql-client
-
-# PostgreSQL - Base de datos relacional avanzada
-postgresql-client
-
-# MongoDB - Base de datos NoSQL
-mongosh o mongo
-
-# ============================================
-# HERRAMIENTAS DE DESARROLLO
-# ============================================
-
-# Git - Control de versiones
-git
-
-# Docker - Contenedores
+nodejs
+npm
+go
+python3
 docker
-
-# Docker Compose - Orquestación de contenedores
 docker-compose
-
-# ============================================
-# AI AGENTS
-# ============================================
-
-# OpenCode - AI Agent principal
-# Instalación: npm install -g opencode-ai
+docker-buildx
+git
+openssh
 opencode-ai
-
-# Claude Code - AI Agent de Anthropic
-# Instalación: curl -sSfL 'https://docs.anthropic.com/claude-code/install' | sh
-# o descargar desde: https://github.com/anthropics/claude-code/releases
-
-# ============================================
-# MEMORIA PERSISTENTE
-# ============================================
-
-# Engram - Memoria persistente para agentes
-# Descarga: https://github.com/gentleman-programming/engram/releases
-# Instalación manual: Extraer binario a ~/go/bin/engram
 engram
-
-# ============================================
-# AGENT TEAMS LITE
-# ============================================
-
-# Framework de agentes
-# Repo: https://github.com/gentleman-programming/agent-teams-lite
 agent-teams-lite
-
-# ============================================
-# INSTALACIÓN EN DISTINTOS SO
-# ============================================
-
-# Arch/Manjaro:
-# sudo pacman -S nodejs npm php composer go python3 mysql-client postgresql docker docker-compose git
-
-# Ubuntu/Debian:
-# sudo apt install nodejs npm php php-cli php-common php-composer mysql-client postgresql-client docker.io docker-compose git
-
-# Fedora/RHEL:
-# sudo dnf install nodejs npm php php-cli php-composer go python3 mysql postgresql docker docker-compose git
-
-# macOS (Homebrew):
-# brew install node npm php composer go python3 mysql postgresql docker git
