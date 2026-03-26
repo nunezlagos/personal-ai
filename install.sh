@@ -78,12 +78,6 @@ check_command go || MISSING_DEPS+=(go)
 check_command python3 || MISSING_DEPS+=(python3)
 
 echo ""
-echo "Bases de datos:"
-check_command mysql || check_command mysqld || echo -e "  ${YELLOW}⚠${NC} MySQL: no encontrado (opcional)"
-check_command psql || echo -e "  ${YELLOW}⚠${NC} PostgreSQL: no encontrado (opcional)"
-check_command mongod || echo -e "  ${YELLOW}⚠${NC} MongoDB: no encontrado (opcional)"
-
-echo ""
 echo "Herramientas de desarrollo:"
 check_command git || MISSING_DEPS+=(git)
 check_command docker || echo -e "  ${YELLOW}⚠${NC} Docker: no encontrado (opcional)"
@@ -261,15 +255,13 @@ echo -e "${YELLOW}🔗 Configurando symlinks (idempotente)...${NC}"
 mkdir -p "$HOME/.config/opencode"
 mkdir -p "$HOME/.config/opencode/skills"
 
-echo -n "  "
 for file in AGENTS.md opencode.json .gitignore; do
     if [ -f "$REPO_DIR/config/$file" ]; then
         rm -f "$HOME/.config/opencode/$file"
         ln -s "$REPO_DIR/config/$file" "$HOME/.config/opencode/$file" && \
-        echo -n "${GREEN}✓${NC} " || echo -n "${RED}✗${NC} "
+        echo -e "  ${GREEN}✓${NC} $file" || echo -e "  ${RED}✗${NC} $file"
     fi
 done
-echo ""
 
 echo "  Skills:"
 for skill in "$REPO_DIR/skills"/*; do
