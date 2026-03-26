@@ -22,6 +22,7 @@
 1. **VERIFICA** si las herramientas están instaladas antes de ejecutar
 2. **PREGUNTA** si no sabés algo — no finjas saber
 3. **NADA SIN HACER** — todo debe resolverse
+4. **COMMITS EN ESPAÑOL** — mensajes de commit siempre en español para este proyecto
 
 ## Memoria Persistente (OBLIGATORIO)
 
