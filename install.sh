@@ -274,12 +274,6 @@ for skill in "$REPO_DIR/skills"/*; do
     fi
 done
 
-if [ -f "$REPO_DIR/config/.claude.json" ]; then
-    rm -f "$HOME/.claude.json"
-    ln -s "$REPO_DIR/config/.claude.json" "$HOME/.claude.json" && \
-    echo -e "  ${GREEN}✓${NC} .claude.json" || true
-fi
-
 if [ -f "$REPO_DIR/config/CLAUDE.md" ]; then
     mkdir -p "$HOME/.claude"
     rm -f "$HOME/.claude/CLAUDE.md"
@@ -300,6 +294,25 @@ for skill in "$REPO_DIR/skills"/*; do
         echo -e "  ${RED}✗${NC} $skill_name (falló)"
     fi
 done
+
+echo ""
+echo -e "${YELLOW}🧠 Configurando Engram MCP...${NC}"
+
+# OpenCode: ya viene configurado en opencode.json (symlinkeado arriba)
+echo -e "  ${GREEN}✓${NC} OpenCode: Engram MCP configurado via opencode.json"
+
+# Claude Code: agregar via claude mcp add si no está
+if command -v claude &> /dev/null; then
+    if claude mcp list 2>/dev/null | grep -q "engram"; then
+        echo -e "  ${GREEN}✓${NC} Claude Code: Engram MCP ya configurado"
+    else
+        claude mcp add engram -- engram mcp --tools=agent 2>/dev/null && \
+        echo -e "  ${GREEN}✓${NC} Claude Code: Engram MCP configurado" || \
+        echo -e "  ${RED}✗${NC} Claude Code: Error al configurar Engram MCP"
+    fi
+else
+    echo -e "  ${YELLOW}⚠${NC} Claude Code no disponible, saltando Engram MCP"
+fi
 
 echo ""
 if [ ${#MISSING_DEPS[@]} -gt 0 ]; then
