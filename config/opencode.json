@@ -1,5 +1,8 @@
 {
   "$schema": "https://opencode.ai/config.json",
+  "plugin": [
+    "opencode-anthropic-login-via-cli"
+  ],
   "agent": {
     "oraculo": {
       "description": "Oraculo - Orchestrator principal con tono serio y profesionales",
