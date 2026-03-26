@@ -87,37 +87,44 @@ mkdir -p "$HOME/go/bin"
 
 ENGRAM_VERSION=$(curl -s https://api.github.com/repos/gentleman-programming/engram/releases/latest 2>/dev/null | grep '"tag_name"' | cut -d'"' -f4 || echo "unknown")
 
-if [ -f "$HOME/go/bin/engram" ]; then
-    echo -e "  ${GREEN}✓${NC} Engram: ~/go/bin/engram"
-    echo -e "  ${YELLOW}↻${NC} Actualizando Engram a última versión..."
+install_engram() {
     ARCH=$(uname -m)
     if [ "$ARCH" = "x86_64" ]; then
-        ENGRAM_FILE="engram-linux-amd64"
+        ENGRAM_TAR="engram_${ENGRAM_VERSION}_linux_amd64.tar.gz"
     elif [ "$ARCH" = "aarch64" ]; then
-        ENGRAM_FILE="engram-linux-arm64"
+        ENGRAM_TAR="engram_${ENGRAM_VERSION}_linux_arm64.tar.gz"
     else
-        ENGRAM_FILE="engram-linux-amd64"
+        echo -e "  ${RED}✗${NC} Arquitectura no soportada: $ARCH"
+        return 1
     fi
     
-    curl -fsSL "https://github.com/gentleman-programming/engram/releases/latest/download/$ENGRAM_FILE" -o "$HOME/go/bin/engram" 2>/dev/null && \
+    ENGRAM_URL="https://github.com/gentleman-programming/engram/releases/download/$ENGRAM_VERSION/$ENGRAM_TAR"
+    
+    TEMP_DIR=$(mktemp -d)
+    curl -fsSL "$ENGRAM_URL" -o "$TEMP_DIR/engram.tar.gz" && \
+    tar -xzf "$TEMP_DIR/engram.tar.gz" -C "$TEMP_DIR" && \
+    mv "$TEMP_DIR/engram" "$HOME/go/bin/engram" && \
     chmod +x "$HOME/go/bin/engram" && \
-    echo -e "  ${GREEN}✓${NC} Engram actualizado a $ENGRAM_VERSION" || \
-    echo -e "  ${RED}✗${NC} Error al actualizar Engram"
+    rm -rf "$TEMP_DIR" && \
+    return 0
+}
+
+if [ -f "$HOME/go/bin/engram" ]; then
+    CURRENT_VERSION=$($HOME/go/bin/engram --version 2>/dev/null || echo "unknown")
+    echo -e "  ${GREEN}✓${NC} Engram: ~/go/bin/engram ($CURRENT_VERSION)"
+    echo -e "  ${YELLOW}↻${NC} Actualizando Engram a última versión..."
+    if install_engram; then
+        echo -e "  ${GREEN}✓${NC} Engram actualizado a $ENGRAM_VERSION" 
+    else
+        echo -e "  ${RED}✗${NC} Error al actualizar Engram"
+    fi
 else
     echo -e "${YELLOW}📦 Instalando Engram...${NC}"
-    ARCH=$(uname -m)
-    if [ "$ARCH" = "x86_64" ]; then
-        ENGRAM_FILE="engram-linux-amd64"
-    elif [ "$ARCH" = "aarch64" ]; then
-        ENGRAM_FILE="engram-linux-arm64"
+    if install_engram; then
+        echo -e "  ${GREEN}✓${NC} Engram instalado ($ENGRAM_VERSION)" 
     else
-        ENGRAM_FILE="engram-linux-amd64"
+        echo -e "  ${RED}✗${NC} Error al instalar Engram"
     fi
-    
-    curl -fsSL "https://github.com/gentleman-programming/engram/releases/latest/download/$ENGRAM_FILE" -o "$HOME/go/bin/engram" 2>/dev/null && \
-    chmod +x "$HOME/go/bin/engram" && \
-    echo -e "  ${GREEN}✓${NC} Engram instalado ($ENGRAM_VERSION)" || \
-    echo -e "  ${RED}✗${NC} Error al instalar Engram"
 fi
 
 if [[ ":$PATH:" != *":$HOME/go/bin:"* ]]; then
