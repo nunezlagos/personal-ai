@@ -1,378 +1,484 @@
 #!/bin/bash
 
-set -e
+# No set -e - allow continuing through optional errors
 
 REPO_URL="https://github.com/nunezlagos/personal-ai.git"
 REPO_DIR="$HOME/personal-ai"
+PERSISTENCE_DIR="$REPO_DIR/persistence"
 
-BLUE='\033[0;34m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-RED='\033[0;31m'
+# ─── Colors ──────────────────────────────────────
+B='\033[0;34m'
+G='\033[0;32m'
+Y='\033[1;33m'
+R='\033[0;31m'
+D='\033[2m'
 NC='\033[0m'
 
-echo -e "${BLUE}==========================================${NC}"
-echo -e "${BLUE}  Personal AI Setup${NC}"
-echo -e "${BLUE}  Stack: PHP, TypeScript, JavaScript${NC}"
-echo -e "${BLUE}  Agentes: Oraculo, Arquitecto, Desarrollador, Revisor, Guardia${NC}"
-echo -e "${BLUE}  Memoria: personal-persistence-ai-memory${NC}"
-echo -e "${BLUE}==========================================${NC}"
+# ─── Helpers ─────────────────────────────────────
+ok()   { echo -e "  ${G}✓${NC}  $*"; }
+fail() { echo -e "  ${R}✗${NC}  $*"; }
+warn() { echo -e "  ${Y}·${NC}  $*"; }
+run()  { echo -e "  ${D}→  $*${NC}"; }
+
+STEP=0
+TOTAL=6
+
+step() {
+    STEP=$((STEP + 1))
+    echo ""
+    echo -e "${B}[$STEP/$TOTAL]${NC}  $*"
+    echo -e "  ${D}$(printf '─%.0s' {1..40})${NC}"
+}
+
+# ─── Header ──────────────────────────────────────
+clear
+echo ""
+echo -e "  ${B}Personal AI${NC}  ${D}·  Orquestador${NC}"
+echo -e "  ${D}──────────────────────────────────────────${NC}"
 echo ""
 
-# ============================================
-# DETECCIÓN DEL SISTEMA OPERATIVO
-# ============================================
+# ─────────────────────────────────────────────────
+# [1/6] Sistema y repositorio
+# ─────────────────────────────────────────────────
+
+step "Sistema y repositorio"
 
 detect_os() {
     if [ -f /etc/os-release ]; then
-        . /etc/os-release
-        echo "$ID"
-    elif [ -f /etc/arch-release ]; then
-        echo "arch"
-    elif [ -f /etc/debian_version ]; then
-        echo "debian"
-    elif [ -f /etc/fedora-release ]; then
-        echo "fedora"
-    elif [ "$(uname)" = "Darwin" ]; then
-        echo "macos"
-    else
-        echo "unknown"
+        . /etc/os-release; echo "$ID"
+    elif [ -f /etc/arch-release ]; then echo "arch"
+    elif [ -f /etc/debian_version ]; then echo "debian"
+    elif [ -f /etc/fedora-release ]; then echo "fedora"
+    elif [ "$(uname)" = "Darwin" ]; then echo "macos"
+    else echo "unknown"
     fi
 }
 
 OS=$(detect_os)
-echo -e "Sistema detectado: ${YELLOW}$OS${NC}"
-echo ""
+ok "OS  ${D}$OS${NC}"
 
 if [ -d "$REPO_DIR" ]; then
-    echo -e "${YELLOW}📦 Actualizando repositorio...${NC}"
-    cd "$REPO_DIR"
-    git pull
+    run "Actualizando repositorio..."
+    cd "$REPO_DIR" && git pull -q && ok "Repositorio  ${D}actualizado${NC}"
 else
-    echo -e "${YELLOW}📥 Clonando repositorio...${NC}"
-    git clone "$REPO_URL" "$REPO_DIR"
+    run "Clonando repositorio..."
+    git clone -q "$REPO_URL" "$REPO_DIR" && ok "Repositorio  ${D}clonado${NC}"
     cd "$REPO_DIR"
 fi
 
-echo ""
-echo -e "${YELLOW}🔍 Verificando dependencias del sistema...${NC}"
-echo ""
+# ─────────────────────────────────────────────────
+# [2/6] Dependencias
+# ─────────────────────────────────────────────────
 
-check_command() {
-    if command -v "$1" &> /dev/null; then
-        version=$($1 --version 2>&1 | head -1 | cut -d' ' -f1-3 || echo "installed")
-        echo -e "  ${GREEN}✓${NC} $1: $version"
+step "Dependencias"
+
+MISSING_DEPS=()
+
+check_cmd() {
+    local cmd="$1"
+    local label="${2:-$1}"
+    local optional="${3:-}"
+    if command -v "$cmd" &> /dev/null; then
+        local ver
+        ver=$("$cmd" --version 2>&1 | head -1 | grep -oE '[0-9]+\.[0-9]+(\.[0-9]+)?' | head -1 || echo "")
+        ok "$label  ${D}${ver}${NC}"
         return 0
     else
-        echo -e "  ${RED}✗${NC} $1: NO INSTALADO"
+        if [ "$optional" = "optional" ]; then
+            warn "$label  ${D}no encontrado (opcional)${NC}"
+        else
+            fail "$label  ${D}no instalado${NC}"
+            MISSING_DEPS+=("$cmd")
+        fi
         return 1
     fi
 }
 
-MISSING_DEPS=()
-
-echo "Lenguajes y runtimes (verificación - ya deben estar en sistema):"
-check_command node || echo -e "  ${YELLOW}⚠${NC} Node.js: recomendado para personal-persistence-ai-memory"
-check_command npm || echo -e "  ${YELLOW}⚠${NC} npm: necesario para Node.js"
-check_command php || echo -e "  ${YELLOW}⚠${NC} PHP: opcional (proyectos PHP)"
-check_command composer || true
-check_command go || true
-check_command python3 || true
+echo -e "  ${D}Runtimes${NC}"
+check_cmd node     "node"
+check_cmd npm      "npm"
+check_cmd php      "php"    optional
+check_cmd go       "go"     optional
+check_cmd python3  "python3" optional
 
 echo ""
-echo "Herramientas de desarrollo:"
-check_command git || true
-check_command docker || echo -e "  ${YELLOW}⚠${NC} Docker: no encontrado (opcional)"
+echo -e "  ${D}Herramientas${NC}"
+check_cmd git      "git"
+check_cmd docker   "docker"   optional
+check_cmd composer "composer" optional
 
-echo ""
-echo -e "${YELLOW}🤖 AI Agents:${NC}"
-echo ""
+# ─────────────────────────────────────────────────
+# [3/6] OpenCode
+# ─────────────────────────────────────────────────
 
-# ============================================
-# OPENCODE
-# ============================================
+step "OpenCode"
 
-echo "OpenCode:"
 if command -v opencode &> /dev/null; then
-    echo -e "  ${GREEN}✓${NC} OpenCode: $(opencode --version 2>/dev/null || echo "installed")"
-    echo -e "  ${YELLOW}↻${NC} Actualizando OpenCode a última versión..."
-    npm install -g opencode-ai 2>/dev/null && echo -e "  ${GREEN}✓${NC} OpenCode actualizado" || echo -e "  ${RED}✗${NC} OpenCode update failed"
+    ver=$(opencode --version 2>/dev/null || echo "")
+    ok "OpenCode  ${D}$ver${NC}"
+    run "Actualizando..."
+    npm install -g opencode-ai -q 2>/dev/null && ok "Core actualizado" || fail "Error al actualizar"
 else
-    echo -e "  ${RED}✗${NC} OpenCode: NO INSTALADO"
-    echo -e "  ${YELLOW}📦 Instalando OpenCode...${NC}"
-    npm install -g opencode-ai && echo -e "  ${GREEN}✓${NC} OpenCode instalado" || echo -e "  ${RED}✗${NC} Error al instalar OpenCode"
+    run "Instalando OpenCode..."
+    npm install -g opencode-ai 2>/dev/null && ok "Core instalado" || fail "Error al instalar"
 fi
 
-# ============================================
-# CLAUDE CODE
-# ============================================
-
-echo ""
-echo "Claude Code:"
-if command -v claude &> /dev/null; then
-    echo -e "  ${GREEN}✓${NC} Claude Code: $(claude --version 2>/dev/null | head -1 || echo "installed")"
-else
-    echo -e "  ${YELLOW}⚠${NC} Claude Code: NO INSTALADO"
-    echo -e "  ${YELLOW}📦 Instalando Claude Code...${NC}"
-    
-    # Intentar instalación automática
-    if curl -sSfL 'https://docs.anthropic.com/claude-code/install' 2>/dev/null | sh 2>/dev/null; then
-        echo -e "  ${GREEN}✓${NC} Claude Code instalado"
+# ── Plugins de OpenCode ────────────────────────────
+echo -e "  ${D}Plugins${NC}"
+for plugin in opencode-anthropic-login-via-cli opencode-agent-skills opencode-wakatime opencode-codetime; do
+    if npm list -g "$plugin" &>/dev/null; then
+        npm install -g "$plugin" -q 2>/dev/null && ok "$plugin  ${D}actualizado${NC}" || fail "$plugin"
     else
-        # Instalación manual
-        echo "  ↳ Intentando instalación manual..."
+        npm install -g "$plugin" 2>/dev/null && ok "$plugin  ${D}instalado${NC}" || warn "$plugin  ${D}(opcional, omitido)${NC}"
+    fi
+done
+
+# ─────────────────────────────────────────────────
+# [4/6] Claude Code
+# ─────────────────────────────────────────────────
+
+step "Claude Code"
+
+if command -v claude &> /dev/null; then
+    ver=$(claude --version 2>/dev/null | head -1 || echo "")
+    ok "Instalado  ${D}$ver${NC}"
+else
+    run "Instalando Claude Code..."
+    installed=0
+
+    if curl -sSfL 'https://docs.anthropic.com/claude-code/install' 2>/dev/null | sh 2>/dev/null; then
+        ok "Instalado"
+        installed=1
+    else
         ARCH=$(uname -m)
         CLAUDE_VERSION=$(curl -s https://api.github.com/repos/anthropics/claude-code/releases/latest 2>/dev/null | grep '"tag_name"' | cut -d'"' -f4 || echo "")
-        
+
         if [ -n "$CLAUDE_VERSION" ]; then
-            if [ "$ARCH" = "x86_64" ]; then
-                CLAUDE_TAR="claude-code-${CLAUDE_VERSION}-linux-x64.tar.gz"
-            elif [ "$ARCH" = "aarch64" ]; then
-                CLAUDE_TAR="claude-code-${CLAUDE_VERSION}-linux-arm64.tar.gz"
-            else
-                echo -e "  ${RED}✗${NC} Arquitectura no soportada: $ARCH"
-                CLAUDE_TAR=""
-            fi
-            
-            if [ -n "$CLAUDE_TAR" ]; then
-                TEMP_DIR=$(mktemp -d)
-                CLAUDE_URL="https://github.com/anthropics/claude-code/releases/download/$CLAUDE_VERSION/$CLAUDE_TAR"
-                if curl -fsSL "$CLAUDE_URL" -o "$TEMP_DIR/claude.tar.gz" 2>/dev/null; then
-                    tar -xzf "$TEMP_DIR/claude.tar.gz" -C "$TEMP_DIR"
+            [ "$ARCH" = "x86_64" ]  && CLAUDE_TAR="claude-code-${CLAUDE_VERSION}-linux-x64.tar.gz"
+            [ "$ARCH" = "aarch64" ] && CLAUDE_TAR="claude-code-${CLAUDE_VERSION}-linux-arm64.tar.gz"
+
+            if [ -n "${CLAUDE_TAR:-}" ]; then
+                TEMP=$(mktemp -d)
+                URL="https://github.com/anthropics/claude-code/releases/download/$CLAUDE_VERSION/$CLAUDE_TAR"
+                if curl -fsSL "$URL" -o "$TEMP/claude.tar.gz" 2>/dev/null; then
+                    tar -xzf "$TEMP/claude.tar.gz" -C "$TEMP"
                     mkdir -p "$HOME/.local/bin"
-                    mv "$TEMP_DIR/claude" "$HOME/.local/bin/claude" && chmod +x "$HOME/.local/bin/claude"
-                    rm -rf "$TEMP_DIR"
-                    echo -e "  ${GREEN}✓${NC} Claude Code instalado"
+                    mv "$TEMP/claude" "$HOME/.local/bin/claude" && chmod +x "$HOME/.local/bin/claude"
+                    rm -rf "$TEMP"
+                    ok "Instalado  ${D}$CLAUDE_VERSION${NC}"
+                    installed=1
                 else
-                    echo -e "  ${RED}✗${NC} Error al descargar Claude Code"
-                    rm -rf "$TEMP_DIR"
+                    fail "Error al descargar"
+                    rm -rf "$TEMP"
                 fi
             fi
         else
-            echo -e "  ${YELLOW}↢${NC} Manual: https://docs.anthropic.com/claude-code/install"
+            warn "Manual  ${D}→ https://docs.anthropic.com/claude-code/install${NC}"
         fi
     fi
-fi
 
-# Verificar que Claude Code esté en PATH
-if command -v claude &> /dev/null; then
-    :
-elif [ -f "$HOME/.local/bin/claude" ]; then
-    echo -e "  ${YELLOW}⚠️  Agregá ~/.local/bin a tu PATH:${NC}"
-    echo "    echo 'export PATH=\$HOME/.local/bin:\$PATH' >> ~/.zshrc"
-fi
-
-echo ""
-echo "personal-persistence-ai-memory (memoria persistente):"
-
-# Verificar si Node.js está instalado
-if ! command -v node &> /dev/null; then
-    echo -e "  ${RED}✗${NC} Node.js no está instalado"
-    echo -e "  ${YELLOW}⚠${NC} Instala Node.js primero: https://nodejs.org/"
-else
-    # Verificar si ya está instalado
-    if [ -d "$HOME/personal-persistence-ai-memory" ]; then
-        echo -e "  ${GREEN}✓${NC} personal-persistence-ai-memory: ~/personal-persistence-ai-memory"
-        echo -e "  ${YELLOW}↻${NC} Actualizando..."
-        cd "$HOME/personal-persistence-ai-memory" && git pull
-    else
-        echo -e "${YELLOW}📦 Instalando personal-persistence-ai-memory...${NC}"
-        git clone --depth 1 https://github.com/nunezlagos/personal-persistence-ai-memory.git "$HOME/personal-persistence-ai-memory" && \
-        cd "$HOME/personal-persistence-ai-memory" && npm install
-    fi
-    
-    if [ -d "$HOME/personal-persistence-ai-memory" ]; then
-        echo -e "  ${GREEN}✓${NC} personal-persistence-ai-memory instalado"
-        
-        # Verificar si la API está corriendo (opcional)
-        echo ""
-        echo "  Para iniciar la API:"
-        echo "    cd ~/personal-persistence-ai-memory"
-        echo "    npm run cli -- serve"
-        echo ""
-        echo "  Para usar desde CLI:"
-        echo "    cd ~/personal-persistence-ai-memory"
-        echo "    npm run cli -- -p <proyecto> <comando>"
+    if [ $installed -eq 0 ] && [ -f "$HOME/.local/bin/claude" ]; then
+        warn "Agregá ~/.local/bin a PATH"
     fi
 fi
 
-if [[ ":$PATH:" != *":$HOME/go/bin:"* ]] || [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
-    echo ""
-    echo -e "${YELLOW}⚠️  Agregá los bins a tu PATH:${NC}"
-    if [[ ":$PATH:" != *":$HOME/go/bin:"* ]]; then
-        echo "    echo 'export PATH=\$HOME/go/bin:\$PATH' >> ~/.zshrc"
-    fi
-    if [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
-        echo "    echo 'export PATH=\$HOME/.local/bin:\$PATH' >> ~/.zshrc"
-    fi
-fi
+# ─────────────────────────────────────────────────
+# [5/6] Configuración (symlinks + skills)
+# ─────────────────────────────────────────────────
 
-echo ""
-echo "Agent Teams Lite:"
-if [ -d "$HOME/agent-teams-lite" ]; then
-    echo -e "  ${GREEN}✓${NC} Agent Teams Lite: ~/agent-teams-lite"
-    echo -e "  ${YELLOW}↻${NC} Actualizando Agent Teams Lite..."
-    cd "$HOME/agent-teams-lite" && git pull && echo -e "  ${GREEN}✓${NC} Actualizado" || echo -e "  ${RED}✗${NC} Error al actualizar"
-else
-    echo -e "${YELLOW}📦 Instalando Agent Teams Lite...${NC}"
-    git clone --depth 1 https://github.com/gentleman-programming/agent-teams-lite.git "$HOME/agent-teams-lite" && \
-    echo -e "  ${GREEN}✓${NC} Agent Teams Lite instalado" || \
-    echo -e "  ${RED}✗${NC} Error al instalar Agent Teams Lite"
-fi
-
-echo ""
-echo -e "${YELLOW}🔗 Configurando symlinks (idempotente)...${NC}"
+step "Configuración"
 
 mkdir -p "$HOME/.config/opencode"
 mkdir -p "$HOME/.config/opencode/skills"
+mkdir -p "$HOME/.claude/skills"
 
+echo -e "  ${D}Archivos de configuración${NC}"
 for file in AGENTS.md opencode.json .gitignore; do
     if [ -f "$REPO_DIR/config/$file" ]; then
         rm -f "$HOME/.config/opencode/$file"
         ln -s "$REPO_DIR/config/$file" "$HOME/.config/opencode/$file" && \
-        echo -e "  ${GREEN}✓${NC} $file" || echo -e "  ${RED}✗${NC} $file"
-    fi
-done
-
-echo "  Skills:"
-for skill in "$REPO_DIR/skills"/*; do
-    if [ -d "$skill" ]; then
-        skill_name=$(basename "$skill")
-        rm -rf "$HOME/.config/opencode/skills/$skill_name"
-        ln -s "$skill" "$HOME/.config/opencode/skills/$skill_name" && \
-        echo -e "    ${GREEN}✓${NC} $skill_name" || \
-        echo -e "    ${RED}✗${NC} $skill_name (falló)"
+        ok "$file" || fail "$file"
     fi
 done
 
 if [ -f "$REPO_DIR/config/CLAUDE.md" ]; then
     mkdir -p "$HOME/.claude"
     rm -f "$HOME/.claude/CLAUDE.md"
-    ln -s "$REPO_DIR/config/CLAUDE.md" "$HOME/.claude/CLAUDE.md" && \
-    echo -e "  ${GREEN}✓${NC} CLAUDE.md" || true
+    ln -s "$REPO_DIR/config/CLAUDE.md" "$HOME/.claude/CLAUDE.md" && ok "CLAUDE.md" || true
 fi
 
 echo ""
-echo -e "${YELLOW}🔗 Configurando skills para Claude Code...${NC}"
-mkdir -p "$HOME/.claude/skills"
-
+echo -e "  ${D}Skills${NC}"
+skill_count=0
 for skill in "$REPO_DIR/skills"/*; do
     if [ -d "$skill" ]; then
-        skill_name=$(basename "$skill")
-        rm -rf "$HOME/.claude/skills/$skill_name"
-        ln -s "$skill" "$HOME/.claude/skills/$skill_name" && \
-        echo -e "  ${GREEN}✓${NC} $skill_name" || \
-        echo -e "  ${RED}✗${NC} $skill_name (falló)"
+        name=$(basename "$skill")
+
+        rm -rf "$HOME/.config/opencode/skills/$name"
+        ln -s "$skill" "$HOME/.config/opencode/skills/$name" 2>/dev/null && : || fail "$name (opencode)"
+
+        rm -rf "$HOME/.claude/skills/$name"
+        ln -s "$skill" "$HOME/.claude/skills/$name" 2>/dev/null && : || fail "$name (claude)"
+
+        skill_count=$((skill_count + 1))
     fi
 done
+ok "$skill_count skills vinculados"
 
-echo ""
-echo -e "${YELLOW}🧠 Configurando personal-persistence-ai-memory MCP...${NC}"
+# ─────────────────────────────────────────────────
+# [6/6] Personal Persistence MCP
+# ─────────────────────────────────────────────────
 
-# OpenCode: ya viene configurado en opencode.json (symlinkeado arriba)
-echo -e "  ${GREEN}✓${NC} OpenCode: MCP configurado via opencode.json"
+step "Personal Persistence MCP"
 
-# Claude Code: el sistema de memoria funciona via CLI/API
-if command -v node &> /dev/null; then
-    echo -e "  ${GREEN}✓${NC} Claude Code: personal-persistence-ai-memory accesible via npm run cli"
-    echo "    Usage: cd ~/personal-persistence-ai-memory && npm run cli -- -p <proyecto> <comando>"
+# ── a) Build persistence ────────────────────────
+
+echo -e "  ${D}Build persistence${NC}"
+if [ -d "$PERSISTENCE_DIR" ] && [ -f "$PERSISTENCE_DIR/package.json" ]; then
+    cd "$PERSISTENCE_DIR"
+    run "Instalando dependencias..."
+    npm install --silent 2>/dev/null && ok "Dependencias" || fail "Error en npm install"
+
+    run "Compilando TypeScript..."
+    npm run build 2>/dev/null && ok "Build completo" || fail "Error en build"
+
+    cd "$REPO_DIR"
 else
-    echo -e "  ${YELLOW}⚠${NC} Node.js no disponible"
+    fail "Directorio persistence no encontrado: $PERSISTENCE_DIR"
 fi
+
+# ── b) Wrapper persistence-mcp ─────────────────
 
 echo ""
-echo -e "${YELLOW}⚡ Instalando plugins de OpenCode...${NC}"
+echo -e "  ${D}Wrapper persistence-mcp${NC}"
+mkdir -p "$HOME/.local/bin"
 
-# Agregar package.json para dependencias de plugins
-mkdir -p "$HOME/.config/opencode"
-if [ ! -f "$HOME/.config/opencode/package.json" ]; then
-    echo '{
-  "name": "opencode-plugins",
-  "private": true,
-  "dependencies": {
-    "opencode-codetime": "^0.8.1",
-    "opencode-agent-skills": "^0.6.5",
-    "opencode-wakatime": "^1.0.0"
-  }
-}' > "$HOME/.config/opencode/package.json"
-    echo "  ${GREEN}✓${NC} package.json creado con dependencias"
+MCP_WRAPPER="$HOME/.local/bin/persistence-mcp"
+cat > "$MCP_WRAPPER" <<WRAPPER
+#!/bin/bash
+# persistence-mcp — MCP stdio server for personal-persistence-ai-memory
+exec node "$PERSISTENCE_DIR/dist/mcp.js" "\$@"
+WRAPPER
+
+chmod +x "$MCP_WRAPPER"
+ok "persistence-mcp  ${D}$MCP_WRAPPER${NC}"
+
+# Verificar que funciona
+if echo '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}' | \
+   timeout 3 "$MCP_WRAPPER" 2>/dev/null | grep -q '"result"'; then
+    ok "MCP server  ${D}respondiendo${NC}"
+else
+    warn "MCP server  ${D}verificar manualmente: persistence-mcp${NC}"
 fi
 
-# Agregar plugins al config si no existen
-if [ -f "$HOME/.config/opencode/opencode.json" ]; then
-    # Verificar si ya tiene plugins
-    if ! grep -q "plugin" "$HOME/.config/opencode/opencode.json"; then
-        echo '  "plugin": []' >> "$HOME/.config/opencode/opencode.json"
+# ── c) Limpiar Engram de Claude Code ───────────
+
+echo ""
+echo -e "  ${D}Limpiando Engram de Claude Code${NC}"
+
+# Desinstalar plugin engram si está instalado
+if command -v claude &>/dev/null; then
+    if claude plugin list 2>/dev/null | grep -q "engram"; then
+        run "Desinstalando plugin engram..."
+        claude plugin uninstall engram 2>/dev/null && ok "Plugin engram desinstalado" || warn "Error desinstalando engram"
+    else
+        ok "Plugin engram  ${D}no estaba instalado${NC}"
     fi
-    
-    # Agregar plugins si no están
-    for plugin in "opencode-codetime" "opencode-agent-skills" "opencode-wakatime"; do
-        if ! grep -q "\"$plugin\"" "$HOME/.config/opencode/opencode.json"; then
-            sed -i "s/\"plugin\": \[/\"plugin\": [\"$plugin\", /" "$HOME/.config/opencode/opencode.json" 2>/dev/null || true
-        fi
-    done
-    echo "  ${GREEN}✓${NC} Plugins agregados a opencode.json"
-else
-    # Crear config con plugins
-    cat > "$HOME/.config/opencode/opencode.json" << 'EOF'
+fi
+
+# Limpiar archivos residuales de engram
+ENGRAM_MCP="$HOME/.claude/mcp/engram.json"
+if [ -f "$ENGRAM_MCP" ]; then
+    rm -f "$ENGRAM_MCP"
+    ok "Removido  ${D}$ENGRAM_MCP${NC}"
+fi
+
+ENGRAM_CACHE="$HOME/.claude/plugins/cache/engram"
+if [ -d "$ENGRAM_CACHE" ]; then
+    rm -rf "$ENGRAM_CACHE"
+    ok "Removido  ${D}$ENGRAM_CACHE${NC}"
+fi
+
+ENGRAM_MARKETPLACE="$HOME/.claude/plugins/marketplaces/engram"
+if [ -d "$ENGRAM_MARKETPLACE" ]; then
+    rm -rf "$ENGRAM_MARKETPLACE"
+    ok "Removido  ${D}$ENGRAM_MARKETPLACE${NC}"
+fi
+
+# Limpiar installed_plugins.json
+INSTALLED_PLUGINS="$HOME/.claude/plugins/installed_plugins.json"
+if [ -f "$INSTALLED_PLUGINS" ] && command -v node &>/dev/null; then
+    node -e "
+const fs = require('fs');
+const f = '$INSTALLED_PLUGINS';
+try {
+  const data = JSON.parse(fs.readFileSync(f, 'utf8'));
+  if (data.plugins && data.plugins['engram@engram']) {
+    delete data.plugins['engram@engram'];
+    fs.writeFileSync(f, JSON.stringify(data, null, 2));
+    console.log('ok');
+  }
+} catch(e) {}
+" 2>/dev/null && ok "installed_plugins.json  ${D}limpiado${NC}" || true
+fi
+
+# ── d) Configurar MCP de Claude Code ───────────
+
+echo ""
+echo -e "  ${D}Configurando MCP Claude Code${NC}"
+mkdir -p "$HOME/.claude/mcp"
+
+CLAUDE_MCP_FILE="$HOME/.claude/mcp/persistence.json"
+cat > "$CLAUDE_MCP_FILE" <<JSON
 {
-  "$schema": "https://opencode.ai/config.json",
-  "plugin": [
-    "opencode-codetime",
-    "opencode-agent-skills",
-    "opencode-wakatime"
-  ]
+  "command": "persistence-mcp",
+  "args": []
 }
-EOF
-    echo "  ${GREEN}✓${NC} opencode.json creado con plugins"
-fi
+JSON
+ok "persistence.json  ${D}creado${NC}"
 
-# Instalar dependencias
-cd "$HOME/.config/opencode" && npm install 2>/dev/null || bun install 2>/dev/null || echo "  ${YELLOW}⚠${NC} Bun no instalado, los plugins se instalarán automáticamente"
+# ── e) Actualizar settings.json de Claude ──────
 
 echo ""
-echo "Plugins instalados:"
-echo "  - opencode-codetime: Tracking de tiempo de código"
-echo "  - opencode-agent-skills: Skills dinámicas"
-echo "  - opencode-wakatime: Métricas de código (opcional)"
+echo -e "  ${D}Configurando permisos Claude Code${NC}"
+CLAUDE_SETTINGS="$HOME/.claude/settings.json"
 
-echo ""
-if [ ${#MISSING_DEPS[@]} -gt 0 ]; then
-    echo -e "${YELLOW}⚠️  Dependencias faltantes:${NC}"
-    for dep in "${MISSING_DEPS[@]}"; do
-        echo "    - $dep"
-    done
-    echo ""
-    echo "Para instalar en Arch/Manjaro:"
-    echo "    sudo pacman -S ${MISSING_DEPS[*]}"
-    echo ""
-    echo "Para instalar en Ubuntu/Debian:"
-    echo "    sudo apt install ${MISSING_DEPS[*]}"
-    echo ""
+if [ -f "$CLAUDE_SETTINGS" ] && command -v node &>/dev/null; then
+    node -e "
+const fs = require('fs');
+const f = '$CLAUDE_SETTINGS';
+try {
+  const data = JSON.parse(fs.readFileSync(f, 'utf8'));
+
+  // Limpiar engram de enabledPlugins
+  if (data.enabledPlugins && data.enabledPlugins['engram@engram'] !== undefined) {
+    delete data.enabledPlugins['engram@engram'];
+  }
+
+  // Limpiar extraKnownMarketplaces
+  if (data.extraKnownMarketplaces && data.extraKnownMarketplaces.engram) {
+    delete data.extraKnownMarketplaces.engram;
+  }
+
+  // Configurar permisos de persistence
+  if (!data.permissions) data.permissions = {};
+  if (!data.permissions.allow) data.permissions.allow = [];
+  if (!data.permissions.deny) data.permissions.deny = [];
+
+  // Quitar permisos viejos de engram
+  data.permissions.allow = data.permissions.allow.filter(p => !p.includes('mcp__engram__'));
+
+  // Agregar permisos de persistence
+  const persistenceTools = [
+    'mcp__persistence__mem_save',
+    'mcp__persistence__mem_search',
+    'mcp__persistence__mem_get',
+    'mcp__persistence__mem_update',
+    'mcp__persistence__mem_delete',
+    'mcp__persistence__mem_context',
+    'mcp__persistence__mem_session_summary',
+    'mcp__persistence__mem_session_start',
+    'mcp__persistence__mem_stats',
+    'mcp__persistence__mem_timeline',
+    'mcp__persistence__mem_suggest_topic_key',
+  ];
+  for (const tool of persistenceTools) {
+    if (!data.permissions.allow.includes(tool)) {
+      data.permissions.allow.push(tool);
+    }
+  }
+
+  fs.writeFileSync(f, JSON.stringify(data, null, 2));
+  console.log('ok');
+} catch(e) { console.error(e.message); }
+" 2>/dev/null && ok "settings.json  ${D}actualizado${NC}" || warn "settings.json  ${D}revisar manualmente${NC}"
 else
-    echo -e "${GREEN}✅ Todas las dependencias principales están instaladas${NC}"
+    # Crear settings.json básico si no existe
+    mkdir -p "$HOME/.claude"
+    cat > "$CLAUDE_SETTINGS" <<JSON
+{
+  "permissions": {
+    "allow": [
+      "mcp__persistence__mem_save",
+      "mcp__persistence__mem_search",
+      "mcp__persistence__mem_get",
+      "mcp__persistence__mem_update",
+      "mcp__persistence__mem_delete",
+      "mcp__persistence__mem_context",
+      "mcp__persistence__mem_session_summary",
+      "mcp__persistence__mem_session_start",
+      "mcp__persistence__mem_stats",
+      "mcp__persistence__mem_timeline",
+      "mcp__persistence__mem_suggest_topic_key"
+    ],
+    "deny": [
+      "Bash(rm -rf /)",
+      "Bash(sudo rm -rf /)",
+      "Read(.env)",
+      "Read(.env.*)"
+    ],
+    "defaultMode": "bypassPermissions"
+  }
+}
+JSON
+    ok "settings.json  ${D}creado${NC}"
 fi
 
+# ── f) Verificar OpenCode MCP ──────────────────
+
 echo ""
-echo -e "${BLUE}==========================================${NC}"
-echo -e "${GREEN}  Instalación completada${NC}"
-echo -e "${BLUE}==========================================${NC}"
+echo -e "  ${D}Verificando OpenCode MCP${NC}"
+OC_CONFIG="$HOME/.config/opencode/opencode.json"
+if [ -f "$OC_CONFIG" ] || [ -L "$OC_CONFIG" ]; then
+    if grep -q '"persistence-mcp"' "$OC_CONFIG" 2>/dev/null; then
+        ok "opencode.json  ${D}persistence-mcp configurado${NC}"
+    else
+        warn "opencode.json  ${D}verificar configuración MCP${NC}"
+    fi
+fi
+
+# ─────────────────────────────────────────────────
+# PATH warnings
+# ─────────────────────────────────────────────────
+
+PATH_WARN=0
+[[ ":$PATH:" != *":$HOME/.local/bin:"* ]] && PATH_WARN=1
+
+if [ $PATH_WARN -eq 1 ]; then
+    echo ""
+    warn "Agregá estos paths a ~/.zshrc o ~/.bashrc:"
+    echo -e "      ${D}export PATH=\$HOME/.local/bin:\$PATH${NC}"
+fi
+
+# ─────────────────────────────────────────────────
+# Resumen final
+# ─────────────────────────────────────────────────
+
 echo ""
-echo "Próximos pasos:"
-echo "  1. source ~/.zshrc"
-echo "  2. OpenCode: opencode"
-echo "  3. Claude Code: claude"
-echo "  4. Usá el agente 'oraculo' para comenzar"
-echo "  5. /sdd-init para inicializar un proyecto"
-echo ""
-echo "Memoria persistente:"
-echo "  - API: cd ~/personal-persistence-ai-memory && npm run cli -- serve"
-echo "  - CLI: cd ~/personal-persistence-ai-memory && npm run cli -- -p <proyecto> <comando>"
-echo "  - Puerto: 7438"
+echo -e "  ${D}──────────────────────────────────────────${NC}"
 echo ""
 
-# Auto-actualizar PATH en shell actual
+if [ ${#MISSING_DEPS[@]} -gt 0 ]; then
+    warn "Dependencias faltantes: ${MISSING_DEPS[*]}"
+    echo ""
+    echo -e "  ${D}Arch/Manjaro:  sudo pacman -S ${MISSING_DEPS[*]}${NC}"
+    echo -e "  ${D}Ubuntu/Debian: sudo apt install ${MISSING_DEPS[*]}${NC}"
+    echo ""
+fi
+
+echo -e "  ${G}Instalación completada${NC}"
+echo ""
+echo -e "  ${D}→ source ~/.zshrc${NC}"
+echo -e "  ${D}→ opencode          (OpenCode)${NC}"
+echo -e "  ${D}→ claude            (Claude Code)${NC}"
+echo -e "  ${D}→ /sdd-init         (inicializar proyecto)${NC}"
+echo ""
+echo -e "  ${D}Memoria persistente disponible vía MCP:${NC}"
+echo -e "  ${D}  mem_save, mem_search, mem_context,${NC}"
+echo -e "  ${D}  mem_session_summary, mem_session_start${NC}"
+echo ""
+
+# Auto-source shell
 if [ -f "$HOME/.zshrc" ]; then
-    source "$HOME/.zshrc"
-    echo -e "${GREEN}✅ Shell actualizado${NC}"
+    source "$HOME/.zshrc" 2>/dev/null || true
 fi

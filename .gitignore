@@ -1,1 +1,7 @@
 config/.claude.json
+.atl/
+persistence/node_modules/
+persistence/dist/
+persistence/*.db
+persistence/*.db-wal
+persistence/*.db-shm
