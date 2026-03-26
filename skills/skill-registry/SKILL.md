@@ -1,7 +1,7 @@
 ---
 name: skill-registry
 description: >
-  Create or update the skill registry for the current project. Scans user skills and project conventions, writes .atl/skill-registry.md, and saves to engram if available.
+  Create or update the skill registry for the current project. Scans user skills and project conventions, writes .atl/skill-registry.md, and saves to MCP persistence.
   Trigger: When user says "update skills", "skill registry", "actualizar skills", "update registry", or after installing/removing skills.
 license: MIT
 metadata:
@@ -99,7 +99,7 @@ Create the `.atl/` directory in the project root if it doesn't exist, then write
 .atl/skill-registry.md
 ```
 
-#### B. If engram is available, also save to engram (cross-session bonus):
+#### B. Save to MCP persistence (cross-session):
 
 ```
 mem_save(
@@ -120,7 +120,7 @@ mem_save(
 
 **Project**: {project name}
 **Location**: .atl/skill-registry.md
-**Engram**: {saved / not available}
+**Persistence**: {saved}
 
 ### User Skills Found
 | Skill | Trigger |
@@ -141,7 +141,7 @@ To update after installing/removing skills, run this again.
 ## Rules
 
 - ALWAYS write `.atl/skill-registry.md` regardless of any SDD persistence mode
-- ALWAYS save to engram if the `mem_save` tool is available
+- ALWAYS save to MCP persistence via `mem_save`
 - SKIP `sdd-*`, `_shared`, and `skill-registry` directories when scanning
 - Only read frontmatter (first 10 lines) — do NOT read full skill files
 - Include ALL convention index files found (not just the first)
