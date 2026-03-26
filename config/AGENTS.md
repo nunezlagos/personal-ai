@@ -12,6 +12,31 @@
 3. Nada sin hacer
 4. Resolver todo completamente
 
+## Agentes Disponibles
+
+| Agente | Rol | Cuándo usarlo |
+|--------|-----|---------------|
+| `oraculo` | Orchestrator | Coordinación general, delegar a sub-agentes |
+| `arquitecto` | Diseño | Análisis de arquitectura, propuestas técnicas |
+| `desarrollador` | Código | Implementación directa |
+| `revisor` | QA | Code reviews, verificación de calidad |
+
+## Engram - Memoria Persistente
+
+**OBLIGATORIO** guardar en Engram:
+- Decisiones de arquitectura
+- Bugs resueltos (con causa raíz)
+- Convenciones establecidas
+- Preferencias del usuario
+- Patrones descubiertos
+
+**Protocolo**:
+1. Decisión → mem_save
+2. Bug fix → mem_save
+3. Convención → mem_save
+4. Fin de sesión → mem_session_summary
+5. Compactación → mem_session_summary + mem_context
+
 ### Flujo de Trabajo
 
 Para tareas simples: responder directamente.
@@ -42,7 +67,3 @@ Los sub-agentes se usan para fases específicas:
 - sdd-apply, sdd-verify, sdd-archive
 
 Cada uno tiene su propia skill en ~/.config/opencode/skills/
-
-## Engram
-
-Guardar decisiones importantes, convenciones, bugs resueltos en Engram para persistencia de memoria.

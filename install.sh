@@ -68,6 +68,8 @@ echo ""
 echo "AI Agents:"
 if command -v opencode &> /dev/null; then
     echo -e "  ${GREEN}✓${NC} OpenCode: $(opencode --version 2>/dev/null || echo "installed")"
+    echo -e "  ${YELLOW}↻${NC} Reinstalling OpenCode to latest..."
+    npm install -g opencode-ai 2>/dev/null && echo -e "  ${GREEN}✓${NC} OpenCode updated" || echo -e "  ${RED}✗${NC} OpenCode update failed"
 else
     echo -e "  ${RED}✗${NC} OpenCode: NO INSTALADO"
     echo "    → npm install -g opencode-ai"
@@ -81,11 +83,13 @@ fi
 
 echo ""
 echo "Engram (memoria persistente):"
+mkdir -p "$HOME/go/bin"
+
+ENGRAM_VERSION=$(curl -s https://api.github.com/repos/gentleman-programming/engram/releases/latest 2>/dev/null | grep '"tag_name"' | cut -d'"' -f4 || echo "unknown")
+
 if [ -f "$HOME/go/bin/engram" ]; then
     echo -e "  ${GREEN}✓${NC} Engram: ~/go/bin/engram"
-else
-    echo -e "${YELLOW}📦 Instalando Engram...${NC}"
-    mkdir -p "$HOME/go/bin"
+    echo -e "  ${YELLOW}↻${NC} Actualizando Engram a última versión..."
     ARCH=$(uname -m)
     if [ "$ARCH" = "x86_64" ]; then
         ENGRAM_FILE="engram-linux-amd64"
@@ -97,7 +101,22 @@ else
     
     curl -fsSL "https://github.com/gentleman-programming/engram/releases/latest/download/$ENGRAM_FILE" -o "$HOME/go/bin/engram" 2>/dev/null && \
     chmod +x "$HOME/go/bin/engram" && \
-    echo -e "  ${GREEN}✓${NC} Engram instalado" || \
+    echo -e "  ${GREEN}✓${NC} Engram actualizado a $ENGRAM_VERSION" || \
+    echo -e "  ${RED}✗${NC} Error al actualizar Engram"
+else
+    echo -e "${YELLOW}📦 Instalando Engram...${NC}"
+    ARCH=$(uname -m)
+    if [ "$ARCH" = "x86_64" ]; then
+        ENGRAM_FILE="engram-linux-amd64"
+    elif [ "$ARCH" = "aarch64" ]; then
+        ENGRAM_FILE="engram-linux-arm64"
+    else
+        ENGRAM_FILE="engram-linux-amd64"
+    fi
+    
+    curl -fsSL "https://github.com/gentleman-programming/engram/releases/latest/download/$ENGRAM_FILE" -o "$HOME/go/bin/engram" 2>/dev/null && \
+    chmod +x "$HOME/go/bin/engram" && \
+    echo -e "  ${GREEN}✓${NC} Engram instalado ($ENGRAM_VERSION)" || \
     echo -e "  ${RED}✗${NC} Error al instalar Engram"
 fi
 
@@ -111,6 +130,8 @@ echo ""
 echo "Agent Teams Lite:"
 if [ -d "$HOME/agent-teams-lite" ]; then
     echo -e "  ${GREEN}✓${NC} Agent Teams Lite: ~/agent-teams-lite"
+    echo -e "  ${YELLOW}↻${NC} Actualizando Agent Teams Lite..."
+    cd "$HOME/agent-teams-lite" && git pull && echo -e "  ${GREEN}✓${NC} Actualizado" || echo -e "  ${RED}✗${NC} Error al actualizar"
 else
     echo -e "${YELLOW}📦 Instalando Agent Teams Lite...${NC}"
     git clone --depth 1 https://github.com/gentleman-programming/agent-teams-lite.git "$HOME/agent-teams-lite" && \
@@ -119,7 +140,7 @@ else
 fi
 
 echo ""
-echo -e "${YELLOW}🔗 Configurando symlinks...${NC}"
+echo -e "${YELLOW}🔗 Configurando symlinks (idempotente)...${NC}"
 
 mkdir -p "$HOME/.config/opencode"
 mkdir -p "$HOME/.config/opencode/skills"
@@ -127,7 +148,8 @@ mkdir -p "$HOME/.config/opencode/skills"
 echo -n "  "
 for file in AGENTS.md opencode.json .gitignore; do
     if [ -f "$REPO_DIR/config/$file" ]; then
-        ln -sf "$REPO_DIR/config/$file" "$HOME/.config/opencode/$file" 2>/dev/null && \
+        rm -f "$HOME/.config/opencode/$file"
+        ln -s "$REPO_DIR/config/$file" "$HOME/.config/opencode/$file" && \
         echo -n "${GREEN}✓${NC} " || echo -n "${RED}✗${NC} "
     fi
 done
@@ -137,20 +159,23 @@ echo "  Skills:"
 for skill in "$REPO_DIR/skills"/*; do
     if [ -d "$skill" ]; then
         skill_name=$(basename "$skill")
-        ln -sf "$skill" "$HOME/.config/opencode/skills/$skill_name" 2>/dev/null && \
+        rm -rf "$HOME/.config/opencode/skills/$skill_name"
+        ln -s "$skill" "$HOME/.config/opencode/skills/$skill_name" && \
         echo -e "    ${GREEN}✓${NC} $skill_name" || \
         echo -e "    ${RED}✗${NC} $skill_name (falló)"
     fi
 done
 
 if [ -f "$REPO_DIR/config/.claude.json" ]; then
-    ln -sf "$REPO_DIR/config/.claude.json" "$HOME/.claude.json" 2>/dev/null && \
+    rm -f "$HOME/.claude.json"
+    ln -s "$REPO_DIR/config/.claude.json" "$HOME/.claude.json" && \
     echo -e "  ${GREEN}✓${NC} .claude.json" || true
 fi
 
 if [ -f "$REPO_DIR/config/CLAUDE.md" ]; then
     mkdir -p "$HOME/.claude"
-    ln -sf "$REPO_DIR/config/CLAUDE.md" "$HOME/.claude/CLAUDE.md" 2>/dev/null && \
+    rm -f "$HOME/.claude/CLAUDE.md"
+    ln -s "$REPO_DIR/config/CLAUDE.md" "$HOME/.claude/CLAUDE.md" && \
     echo -e "  ${GREEN}✓${NC} CLAUDE.md" || true
 fi
 

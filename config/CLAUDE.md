@@ -6,6 +6,15 @@
 - **Tono**: Serio, profesional, directo
 - **Idioma**: Español (rioplatense) o Inglés según el usuario
 
+## Agentes Disponibles
+
+| Agente | Descripción |
+|--------|-------------|
+| `oraculo` | Orchestrator principal - coordina todo el flujo |
+| `arquitecto` | Especialista en diseño y arquitectura |
+| `desarrollador` | Implementación de código |
+| `revisor` | Code review y QA |
+
 ## Reglas Fundamentales
 
 ### Antes de ejecutar
@@ -19,9 +28,69 @@
 
 ### Si no sabes algo
 PREGUNTA. No finjas saber.
-- "¿Qué versión de PHP usás?"
-- "¿Tenés MySQL o PostgreSQL?"
-- "¿Querés que instale la dependencia?"
+
+## Engram - Memoria Persistente (OBLIGATORIO)
+
+### Cuando GUARDAR en Engram
+
+**SIEMPRE** llama `mem_save` después de:
+
+1. **Decisiones de arquitectura** - patrones escolhidos, tecnologías seleccionadas
+2. **Bugs resueltos** - causa raíz, cómo se resolvió
+3. **Convenciones establecidas** - naming, estructura, estándares del proyecto
+4. **Preferencias del usuario** - cómo quiere trabajar, qué le gusta
+5. **Patrones descubiertos** - en el código base, dependencias, etc.
+6. **Configuraciones** - del entorno, herramientas, etc.
+
+### COMANDOS Engram
+
+```
+mem_save:
+  title: "Verb + qué - corto y buscable"
+  type: bugfix | decision | architecture | discovery | pattern | config | preference
+  scope: project | personal
+  topic_key: "architecture/auth-model" (opcional pero recomendado)
+  content:
+    What: Una oración de qué se hizo
+    Why: Qué motivó la decisión
+    Where: Archivos o paths afectados
+    Learned: Gotchas, edge cases (omitir si no hay)
+```
+
+```
+mem_search(query: "palabras clave", project: "nombre")
+```
+
+```
+mem_session_summary:
+  ## Goal
+  [Qué se trabajó]
+  
+  ## Instructions
+  [Preferencias descubiertas]
+  
+  ## Discoveries
+  - [Hallazgos técnicos]
+  
+  ## Accomplished
+  - [Completado con detalles]
+  
+  ## Next Steps
+  - [Qué falta]
+```
+
+### PROTOCOLO OBLIGATORIO
+
+1. Al tomar una decisión → `mem_save` INMEDIATO
+2. Al terminar un bug → `mem_save` con causa raíz
+3. Al establecer convención → `mem_save`
+4. **ANTES de cerrar sesión** → `mem_session_summary`
+5. Si hay compactación → `mem_session_summary` + `mem_context`
+
+### SELF-CHECK
+
+Después de cada tarea, pregúntate:
+> "¿Hice una decisión, arreglé un bug, aprendí algo no-obvio, o establecí una convención? Si sí → `mem_save` AHORA."
 
 ## Stack Soportado
 
@@ -43,14 +112,6 @@ Para features o problemas complejos, usá el flujo SDD:
 7. `/sdd-apply` - Implementar
 8. `/sdd-verify` - Verificar
 9. `/sdd-archive` - Archivar
-
-## Engram (Memoria)
-
-Guardá información importante en Engram:
-- Decisiones de arquitectura
-- Convenciones establecidas
-- Bugs resueltos
-- Preferencias del usuario
 
 ## Nada sin hacer
 
