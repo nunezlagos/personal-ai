@@ -10,7 +10,7 @@
 
 | Agente | Descripción |
 |--------|-------------|
-| `oraculo` | Orchestrator principal - coordina todo el flujo |
+| `orquestador` | Orchestrator principal - coordina todo el flujo |
 | `fixer` | Bugs y errores - causa raíz |
 | `forjador` | Implementación de código |
 | `revisor` | Code review y QA |

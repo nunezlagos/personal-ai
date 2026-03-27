@@ -443,6 +443,7 @@ echo ""
 echo -e "  ${D}Configurando MCP Claude Code${NC}"
 mkdir -p "$HOME/.claude/mcp"
 
+# MCP persistence (siempre requerido)
 CLAUDE_MCP_FILE="$HOME/.claude/mcp/persistence.json"
 cat > "$CLAUDE_MCP_FILE" <<JSON
 {
@@ -451,6 +452,21 @@ cat > "$CLAUDE_MCP_FILE" <<JSON
 }
 JSON
 ok "persistence.json  ${D}creado${NC}"
+
+# MCPs adicionales del proyecto (context7, filesystem, playwright)
+MCP_CONFIG_DIR="$REPO_DIR/config/mcp"
+if [ -d "$MCP_CONFIG_DIR" ]; then
+    for mcp_file in "$MCP_CONFIG_DIR"/*.json; do
+        if [ -f "$mcp_file" ]; then
+            mcp_name=$(basename "$mcp_file")
+            # No sobrescribir persistence.json (ya configurado arriba)
+            if [ "$mcp_name" != "persistence.json" ]; then
+                cp "$mcp_file" "$HOME/.claude/mcp/$mcp_name" && \
+                ok "$mcp_name  ${D}→ MCP${NC}" || warn "$mcp_name  ${D}error al copiar${NC}"
+            fi
+        fi
+    done
+fi
 
 # ── e) Actualizar settings.json de Claude ──────
 

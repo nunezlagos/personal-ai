@@ -6,7 +6,7 @@
 
 | Agente | Archivo | Descripción |
 |--------|---------|-------------|
-| **Oraculo** | `oraculo.md` | Orchestrator principal - coordina todo |
+| **Orquestador** | `orquestador.md` | Orchestrator principal - coordina todo |
 | **Sentinela** | `sentinela.md` | Seguridad y auditoría |
 | **Forjador** | `forjador.md` | Implementación de código |
 | **Revisor** | `revisor.md` | QA y validación |
@@ -16,7 +16,7 @@
 
 En tus prompts, puedes referirte a los agentes directamente:
 
-- **Oraculo**: "@oraculo, coordina esta tarea"
+- **Orquestador**: "@orquestador, coordina esta tarea"
 - **Sentinela**: "Sentinela, revisa esto por seguridad"
 - **Forjador**: "Forjador, implementa esta feature"
 - **Revisor**: "Revisor, verifica este código"
